@@ -156,7 +156,7 @@ class Builder:
 			elif action == "readonly":
 
 				# Append a MACRO_RO action
-				script.append("MACRO_RO %s" % (args[0], args[0]))
+				script.append("MACRO_RO %s" % args[0])
 
 			# [writable]
 			# 
