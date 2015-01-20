@@ -56,4 +56,4 @@ EOF
 chmod +x ${GUEST_DIR}/sbin/liteinit
 
 # PRoot
-${PROOT_BIN} ${BIND_ARGS} -r ${GUEST_DIR}
+${PROOT_BIN} ${BIND_ARGS} -r ${GUEST_DIR} /sbin/liteinit
