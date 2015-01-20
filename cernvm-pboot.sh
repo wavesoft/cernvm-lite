@@ -5,12 +5,14 @@ BASE_DIR=/mnt/.ro/cvm3
 
 # Require a path to the boot script
 [ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && exit 0
+BOOT_SCRIPT=$1
+shift
 
 # Create a temporary destination directory
 GUEST_DIR=$(mktemp -d)
 
 # Check if we have proot utility, otherwise download it
-PROOT_BIN=$(which proot)
+PROOT_BIN=$(which proot 2>/dev/null)
 if [ -z "${PROOT_BIN}" ]; then
 	PROOT_BIN="./proot"
 	if [ ! -f "${PROOT_BIN}" ]; then
@@ -21,8 +23,8 @@ if [ -z "${PROOT_BIN}" ]; then
 	fi
 fi
 
-# Start by bind-mounting /dev
-BIND_ARGS="-b /dev:/dev"
+# Start by bind-mounting /dev, /proc and /sys
+BIND_ARGS="-b /dev -b /proc -b /sys"
 
 # Read-only mount from $1 to $2
 function MACRO_RO {
@@ -39,22 +41,13 @@ function MACRO_MKDIR {
 }
 
 # Source boot script
-. $1
+. ${BOOT_SCRIPT}
 
 # Prepare filesystem
 MACRO_PREPARE_FS ${GUEST_DIR}
 
-# Prepare final mountpoint locations
-mkdir ${GUEST_DIR}/{proc,sys}
-
-# Prepare micro-init script
-cat <<EOF > ${GUEST_DIR}/liteinit
-#!/bin/sh
-mount -t proc proc /proc
-mount -t sysfs sys /sys
-bash
-EOF
-chmod +x ${GUEST_DIR}/liteinit
-
 # PRoot
-${PROOT_BIN} ${BIND_ARGS} -r ${GUEST_DIR} /liteinit
+${PROOT_BIN} ${BIND_ARGS} -r ${GUEST_DIR} $*
+
+# Remove directory upon exit
+rm -rf ${GUEST_DIR}

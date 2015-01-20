@@ -5,6 +5,8 @@ BASE_DIR=/mnt/.ro/cvm3
 
 # Require a path to the boot script
 [ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && exit 0
+BOOT_SCRIPT=$1
+shift
 
 # Create a temporary destination directory
 GUEST_DIR=$(mktemp -d)
@@ -23,7 +25,7 @@ function MACRO_MKDIR {
 }
 
 # Source boot script
-. $1
+. ${BOOT_SCRIPT}
 
 # Prepare filesystem
 MACRO_PREPARE_FS ${GUEST_DIR}
