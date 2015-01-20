@@ -48,12 +48,13 @@ MACRO_PREPARE_FS ${GUEST_DIR}
 mkdir ${GUEST_DIR}/{proc,sys}
 
 # Prepare micro-init script
-cat <<EOF > ${GUEST_DIR}/sbin/liteinit
+cat <<EOF > ${GUEST_DIR}/liteinit
 #!/bin/sh
 mount -t proc proc /proc
 mount -t sysfs sys /sys
+bash
 EOF
-chmod +x ${GUEST_DIR}/sbin/liteinit
+chmod +x ${GUEST_DIR}/liteinit
 
 # PRoot
-${PROOT_BIN} ${BIND_ARGS} -r ${GUEST_DIR} /sbin/liteinit
+${PROOT_BIN} ${BIND_ARGS} -r ${GUEST_DIR} /liteinit
