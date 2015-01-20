@@ -118,14 +118,18 @@ fi
 # Create a temporary destination directory
 TEMP_DIR=$(mktemp -d)
 GUEST_DIR="${TEMP_DIR}/root"
-BASE_DIR="${TEMP_DIR}/ro/cvm3"
+CVMFS_RO_DIR="${TEMP_DIR}/ro"
+BASE_DIR="${CVMFS_RO_DIR}/cvm3"
 
 # Make directories
 mkdir ${TEMP_DIR}/{root,ro,cvmfs}
 
 # Mount CVMFS repository in $BASE_DIR,
 # using the ${TEMP_DIR}/cvmfs as cache
-mount_cvmfs "${TEMP_DIR}/ro" "${TEMP_DIR}/cvmfs"
+mount_cvmfs ${CVMFS_RO_DIR} "${TEMP_DIR}/cvmfs"
+
+# Get the latest update pack version
+CVMFS_VERSION=$(cat ${CVMFS_RO_DIR}/update-packs/cvm3/latest | grep version | awk -F'=' '{print $2}')
 
 # Source boot script
 . ${BOOT_SCRIPT}
@@ -134,8 +138,9 @@ mount_cvmfs "${TEMP_DIR}/ro" "${TEMP_DIR}/cvmfs"
 MACRO_PREPARE_FS ${GUEST_DIR}
 
 # PRoot
+echo "CernVM-Lite: Starting CernVM in userland v${CVMFS_VERSION}"
 ${PROOT_BIN} ${BIND_ARGS} -R ${GUEST_DIR} -w / $*
 
 # Remove directory upon exit
-fusermount -u ${BASE_DIR}
+fusermount -u ${CVMFS_RO_DIR}
 rm -rf ${GUEST_DIR}
