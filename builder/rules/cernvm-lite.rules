@@ -35,6 +35,9 @@
 #   Set the value of various configurable parameters.
 #
 
+# Set the archive tag
+set:tag:3.3.38.0
+
 # Bind the read-only parts
 readonly:bin
 readonly:boot

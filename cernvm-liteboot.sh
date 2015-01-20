@@ -42,13 +42,30 @@ function MACRO_RW {
 function MACRO_MKDIR {
 	mkdir -p ${GUEST_DIR}/$1
 }
+# Expand archive with the tag id in $1
+function MACRO_EXPAND {
+
+	# The archive file should be in cvmfs
+	ARCHIVE_FILE="${CVMFS_RO_DIR}/lite/files-$1.tbz2"
+
+	# Override with files archive that exist in the
+	# same directory as the boot script
+	BOOT_SCRIPT_DIR=$(dirname ${BOOT_SCRIPT})
+	if [ -f "${BOOT_SCRIPT_DIR}/files-$1.tbz2" ]; then
+		ARCHIVE_FILE="${BOOT_SCRIPT_DIR}/files-$1.tbz2"
+	fi
+
+	# Expand the files archive
+	tar -C ${BASE_DIR} -jxf ${ARCHIVE_FILE}
+
+}
 ################################################
 
 # Source boot script
 . ${BOOT_SCRIPT}
 
 # Prepare filesystem
-MACRO_PREPARE_FS ${GUEST_DIR}
+prepare_root ${GUEST_DIR}
 
 # Chroot
 chroot ${GUEST_DIR}

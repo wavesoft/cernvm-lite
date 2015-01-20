@@ -34,6 +34,18 @@ class Builder:
 		self.script_pre = []
 		self.script_post = []
 
+	def getParameter(self, name, default=""):
+		"""
+		Get the value of a configurable parameter
+		"""
+
+		# Return default value if not exists
+		if not name in self.parameters:
+			return default
+
+		# Return parameter value
+		return self.parameters[name]
+
 	def saveScript(self, filename):
 		"""
 		Save the script into a file
@@ -50,10 +62,10 @@ class Builder:
 			outDir += "/"
 
 		# Calculate the name of the file archive
-		archiveName = "%s-files.tbz2" % outName
+		archiveName = "files-%s.tbz2" % self.getParameter("tag", "default")
 
 		# Run tar to create the binary payload
-		ans = os.system("tar -zcf %s%s -C %s %s %s" % (
+		ans = os.system("tar -jcf %s%s -C %s %s %s" % (
 			outDir,
 			archiveName,
 			self.baseDir,
@@ -70,17 +82,16 @@ class Builder:
 			f.write("# Proceduraly generated function for setting-up the CernVM\n")
 			f.write("# filesystem before final chroot.\n")
 			f.write("#\n")
-			f.write("function MACRO_PREPARE_FS {\n")
+			f.write("function prepare_root {\n")
 			f.write("\tlocal GUEST_DIR=$1\n")
-			f.write("\tlocal SCRIPT_DIR=$( cd \"$( dirname \"${BASH_SOURCE[0]}\" )\" && pwd )\n")
 			f.write("\t\n")
 
 			# Write pre-expand script
 			for line in self.script_pre:
 				f.write("\t%s\n" % line)
 
-			# Write expand code
-			f.write("\ttar -C ${GUEST_DIR} -zxf ${SCRIPT_DIR}/%s\n" % archiveName)
+			# Write expand macro that expands compressed files
+			f.write("\tMACRO_EXPAND %s\n" % self.getParameter("tag", "default"))
 
 			# Write post-expand script
 			for line in self.script_post:

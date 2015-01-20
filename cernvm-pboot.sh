@@ -18,13 +18,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-# Reset Properties
-BASE_DIR=""
-GUEST_DIR=""
-
-# Parameters to be populated by the macros
-BIND_ARGS=""
-
 ################################################
 
 # Helper function to set-up CVMFS
@@ -96,7 +89,31 @@ function MACRO_RW {
 function MACRO_MKDIR {
 	mkdir -p ${GUEST_DIR}/$1
 }
+# Expand archive with the tag id in $1
+function MACRO_EXPAND {
+
+	# The archive file should be in cvmfs
+	ARCHIVE_FILE="${CVMFS_RO_DIR}/lite/files-$1.tbz2"
+
+	# Override with files archive that exist in the
+	# same directory as the boot script
+	BOOT_SCRIPT_DIR=$(dirname ${BOOT_SCRIPT})
+	if [ -f "${BOOT_SCRIPT_DIR}/files-$1.tbz2" ]; then
+		ARCHIVE_FILE="${BOOT_SCRIPT_DIR}/files-$1.tbz2"
+	fi
+
+	# Expand the files archive
+	tar -C ${BASE_DIR} -jxf ${ARCHIVE_FILE}
+
+}
 ################################################
+
+# Reset Properties
+BASE_DIR=""
+GUEST_DIR=""
+
+# Parameters to be populated by the macros
+BIND_ARGS=""
 
 # Require a path to the boot script
 [ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && exit 0
@@ -136,7 +153,7 @@ CVMFS_VERSION=$(cat ${CVMFS_RO_DIR}/update-packs/cvm3/latest | grep version | aw
 
 # Prepare filesystem
 echo "CernVM-Lite: Preparing root filesystem"
-MACRO_PREPARE_FS ${GUEST_DIR}
+prepare_root ${GUEST_DIR}
 
 # PRoot
 echo "CernVM-Lite: Starting CernVM in userland v${CVMFS_VERSION}"
