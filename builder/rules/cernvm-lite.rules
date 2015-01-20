@@ -58,7 +58,7 @@ copy:var:var/lib/texmf var/cache/yum var/lib/yum/yumdb var/lib/rpm
 # Read-only mount after files are copied
 post-readonly:var/lib/texmf
 post-readonly:var/cache/yum
-post-readonly:var/lib/yum/yumd
+post-readonly:var/lib/yum/yumdb
 post-readonly:var/lib/rpm
 
 # Make /home, /opt and /srv writable
