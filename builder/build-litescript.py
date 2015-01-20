@@ -224,7 +224,8 @@ def showHelp():
 if __name__ == "__main__":
 
 	# Check for missing arguments
-	if len(sys.argv) < 2:
+	if len(sys.argv) < 3:
+		print "ERROR: Missing arguments"
 		showHelp()
 		sys.exit(0)
 
