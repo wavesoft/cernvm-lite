@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-BASE_DIR=/mnt/.ro/cvm3/
+BASE_DIR=/mnt/.ro/cvm3
 
 # Require a path to the boot script
 [ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && exit 0
