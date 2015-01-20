@@ -24,7 +24,7 @@ fi
 # Read-only mount from $1 to $2
 BIND_ARGS=""
 function MACRO_RO {
-	BIND_ARGS="${BIND_ARGS} -b $1:$2"
+	BIND_ARGS="${BIND_ARGS} -b ${BASE_DIR}/$1:$1"
 	mkdir -p ${GUEST_DIR}/$1
 }
 # Create writable directory in $1
