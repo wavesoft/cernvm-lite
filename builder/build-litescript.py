@@ -175,7 +175,7 @@ class Builder:
 
 					# Append a MACRO_MKDIR action for every directory
 					script.append("for XDIR in %s; do" % args[1])
-					script.append("\tMACRO_MKDIR ${GUEST_DIR}/${XDIR}")
+					script.append("\tMACRO_MKDIR ${GUEST_DIR}/%s/${XDIR}" % args[0])
 					script.append("done")
 
 			# [touch]
