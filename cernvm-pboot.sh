@@ -23,9 +23,10 @@ if [ -z "${PROOT_BIN}" ]; then
 	fi
 fi
 
-# Start by bind-mounting /dev, /proc and /sys
-BIND_ARGS="-b /dev -b /proc -b /sys"
+# Bind some required shared mountpoints
+BIND_ARGS=""
 
+################################################
 # Read-only mount from $1 to $2
 function MACRO_RO {
 	BIND_ARGS="${BIND_ARGS} -b ${BASE_DIR}/$1:/$1"
@@ -39,6 +40,7 @@ function MACRO_RW {
 function MACRO_MKDIR {
 	mkdir -p ${GUEST_DIR}/$1
 }
+################################################
 
 # Source boot script
 . ${BOOT_SCRIPT}
@@ -47,7 +49,7 @@ function MACRO_MKDIR {
 MACRO_PREPARE_FS ${GUEST_DIR}
 
 # PRoot
-${PROOT_BIN} ${BIND_ARGS} -r ${GUEST_DIR} $*
+${PROOT_BIN} ${BIND_ARGS} -R ${GUEST_DIR} -w / $*
 
 # Remove directory upon exit
 rm -rf ${GUEST_DIR}

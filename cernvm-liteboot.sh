@@ -11,6 +11,7 @@ shift
 # Create a temporary destination directory
 GUEST_DIR=$(mktemp -d)
 
+################################################
 # Read-only mount from $1 in host to $1 in guest
 function MACRO_RO {
 	ln -s ${BASE_DIR}/$1 ${GUEST_DIR}/$1
@@ -23,6 +24,7 @@ function MACRO_RW {
 function MACRO_MKDIR {
 	mkdir -p ${GUEST_DIR}/$1
 }
+################################################
 
 # Source boot script
 . ${BOOT_SCRIPT}
