@@ -72,7 +72,6 @@ class Builder:
 			f.write("#\n")
 			f.write("function MACRO_PREPARE_FS {\n")
 			f.write("\tlocal GUEST_DIR=$1\n")
-			f.write("\tlocal BASE_DIR=$2\n")
 			f.write("\tlocal SCRIPT_DIR=$( cd \"$( dirname \"${BASH_SOURCE[0]}\" )\" && pwd )\n")
 			f.write("\t\n")
 
@@ -157,7 +156,7 @@ class Builder:
 			elif action == "readonly":
 
 				# Append a MACRO_RO action
-				script.append("MACRO_RO ${BASE_DIR}/%s ${GUEST_DIR}/%s" % (args[0], args[0]))
+				script.append("MACRO_RO %s" % (args[0], args[0]))
 
 			# [writable]
 			# 
@@ -168,14 +167,14 @@ class Builder:
 			elif action == "writable":
 
 				# Append a MACRO_RW action
-				script.append("MACRO_RW ${GUEST_DIR}/%s" % args[0])
+				script.append("MACRO_RW %s" % args[0])
 
 				# Process directory structure arguments
 				if len(args) > 1:
 
 					# Append a MACRO_MKDIR action for every directory
 					script.append("for XDIR in %s; do" % args[1])
-					script.append("\tMACRO_MKDIR ${GUEST_DIR}/%s/${XDIR}" % args[0])
+					script.append("\tMACRO_MKDIR %s/${XDIR}" % args[0])
 					script.append("done")
 
 			# [touch]
