@@ -118,14 +118,14 @@ fi
 # Create a temporary destination directory
 TEMP_DIR=$(mktemp -d)
 GUEST_DIR="${TEMP_DIR}/root"
-BASE_DIR="${TEMP_DIR}/ro"
+BASE_DIR="${TEMP_DIR}/ro/cvm3"
 
 # Make directories
 mkdir ${TEMP_DIR}/{root,ro,cvmfs}
 
 # Mount CVMFS repository in $BASE_DIR,
 # using the ${TEMP_DIR}/cvmfs as cache
-mount_cvmfs ${BASE_DIR} "${TEMP_DIR}/cvmfs"
+mount_cvmfs "${TEMP_DIR}/ro" "${TEMP_DIR}/cvmfs"
 
 # Source boot script
 . ${BOOT_SCRIPT}
