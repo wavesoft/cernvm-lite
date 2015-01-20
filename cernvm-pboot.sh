@@ -162,4 +162,4 @@ ${PROOT_BIN} ${BIND_ARGS} -R ${GUEST_DIR} -w / $*
 # Remove directory upon exit
 echo "CernVM-Lite: Cleaning-up environment"
 fusermount -u ${CVMFS_RO_DIR}
-rm -rf ${GUEST_DIR}
+rm -rf ${TEMP_DIR}
