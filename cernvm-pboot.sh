@@ -135,6 +135,7 @@ CVMFS_VERSION=$(cat ${CVMFS_RO_DIR}/update-packs/cvm3/latest | grep version | aw
 . ${BOOT_SCRIPT}
 
 # Prepare filesystem
+echo "CernVM-Lite: Preparing root filesystem"
 MACRO_PREPARE_FS ${GUEST_DIR}
 
 # PRoot
@@ -142,5 +143,6 @@ echo "CernVM-Lite: Starting CernVM in userland v${CVMFS_VERSION}"
 ${PROOT_BIN} ${BIND_ARGS} -R ${GUEST_DIR} -w / $*
 
 # Remove directory upon exit
+echo "CernVM-Lite: Cleaning-up environment"
 fusermount -u ${CVMFS_RO_DIR}
 rm -rf ${GUEST_DIR}
