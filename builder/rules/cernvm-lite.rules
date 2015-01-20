@@ -35,6 +35,20 @@
 #   Set the value of various configurable parameters.
 #
 
+# Bind the read-only parts
+readonly:bin
+readonly:boot
+readonly:cgroup
+readonly:cvmfs
+readonly:dev
+readonly:lib
+readonly:lib64
+readonly:proc
+readonly:sbin
+readonly:selinux
+readonly:sys
+readonly:usr
+
 # Copy the /etc folder as it is
 copy:etc
 
@@ -51,6 +65,10 @@ post-readonly:var/lib/rpm
 writable:home
 writable:opt
 writable:srv
+writable:media
+writable:misc
+writable:net
+writable:tmp
 
 # Create /usr/local with appropriate structure
 writable:usr/local:{bin,etc,games,include,lib,lib64,libexec,sbin,src,share/{applications,info,perl5,man/man{1,1x,2,2x,3,3x,4,4x,5,5x,6,6x,7,7x,8,8x,9,9x,n}}}
