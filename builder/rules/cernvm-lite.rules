@@ -11,24 +11,28 @@
 #   list of additional directories that should be ignored from
 #   the copy process.
 #
-# * readonly:<directory>
+# * [post-]readonly:<directory>
 #
 #   Read-only bind mount from the base filesystem into the guest
 #   filesystem.
 #
-# * writable:<directory>[:<structure> ...]
+# * [post-]writable:<directory>[:<structure> ...]
 #
 #   Create a writable, blank directory on the location specified.
 #   The second argument is the definition of the directory structure
 #   to create upon creation of the base folder.
 #
-# * touch:<filename>
+# * [post-]touch:<filename>
 #
 #   Create a blank filename in the specified path.
 #
-# * sh:<line>
+# * [post-]sh:<line>
 #
 #	Append the following line of code in the litescript.
+#
+# * set:<parameter>:<value>
+# 
+#   Set the value of various configurable parameters.
 #
 
 # Copy the /etc folder as it is
@@ -36,10 +40,12 @@ copy:etc
 
 # Copy /var folder, excluding big parts that are rarely used
 copy:var:var/lib/texmf var/cache/yum var/lib/yum/yumdb var/lib/rpm
-readonly:var/lib/texmf
-readonly:var/cache/yum
-readonly:var/lib/yum/yumd
-readonly:var/lib/rpm
+
+# Read-only mount after files are copied
+post-readonly:var/lib/texmf
+post-readonly:var/cache/yum
+post-readonly:var/lib/yum/yumd
+post-readonly:var/lib/rpm
 
 # Make /home, /opt and /srv writable
 writable:home
@@ -47,4 +53,4 @@ writable:opt
 writable:srv
 
 # Create /usr/local with appropriate structure
-writable:/usr/local:{bin,etc,games,include,lib,lib64,libexec,sbin,src,share/{applications,info,perl5,man/man{1,1x,2,2x,3,3x,4,4x,5,5x,6,6x,7,7x,8,8x,9,9x,n}}}
+writable:usr/local:{bin,etc,games,include,lib,lib64,libexec,sbin,src,share/{applications,info,perl5,man/man{1,1x,2,2x,3,3x,4,4x,5,5x,6,6x,7,7x,8,8x,9,9x,n}}}

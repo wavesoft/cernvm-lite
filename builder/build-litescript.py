@@ -1,5 +1,8 @@
 #!/usr/bin/python
+
+import os
 import sys
+import tempfile
 
 class Builder:
 	"""
@@ -15,8 +18,6 @@ class Builder:
 
 		# The base filesystem location
 		self.baseDir = "/mnt/.ro/cvm3/"
-		# The output configuration script
-		self.output = "output.sh"
 
 		# -- Internal properties ---------
 
@@ -24,17 +25,65 @@ class Builder:
 		self.dirInclude = []
 		# Which directories to exclude from the file archive
 		self.dirExclude = []
-		# The lines of code to append in the config file
-		self.script = []
+		# Actions to be performed
+		self.actions = []
+		# Configurable parameters
+		self.parameters = {}
 
-	def loadRulesetActions(self, filename):
+		# Pre-expand and post-expand script
+		self.script_pre = []
+		self.script_post = []
+
+	def saveScript(self, filename):
+		"""
+		Save the script into a file
+		"""
+
+		# Get the name of the output filename without the extension
+		outName = filename
+		if '.' in outName:
+			outName = ".".join(os.path.basename(filename).split(".")[0:-1])
+
+		# Get the output directory
+		outDir = os.path.dirname(filename)
+		if outDir:
+			outDir += "/"
+
+		# Calculate the name of the file archive
+		archiveName = "%s-files.tbz2" % outName
+
+		# Run tar to create the binary payload
+		print("tar -zcf %s%s -C %s %s %s" % (
+			outDir,
+			archiveName,
+			self.baseDir,
+			" ".join(map(lambda x: "--exclude='%s'" % x, self.dirExclude)),
+			" ".join(self.dirInclude)
+			)
+		)
+
+		# Open output file
+		with open(filename, "w") as f:
+
+			# Write pre-expand script
+			for line in self.script_pre:
+				f.write("%s\n" % line)
+
+			# Write expand code
+			f.write("MACRO_EXPAND %s\n" % archiveName)
+
+			# Write post-expand script
+			for line in self.script_post:
+				f.write("%s\n" % line)
+
+	def loadActions(self, filename):
 		"""
 		This function reads the ruleset from the filename specified
 		and returns an array with the sequence of actions to perform
 		"""
 
-		# Actions to be performed
-		actions = []
+		# Reset actions
+		self.actions = []
 
 		# Read file
 		with open(filename, 'r') as f:
@@ -48,31 +97,28 @@ class Builder:
 					continue
 
 				# Store action
-				actions.append( l.split(":") )
+				self.actions.append( l.split(":") )
 
-		# Return actions
-		return actions
-
-	def expandBrackets(self, expression):
+	def compile(self):
 		"""
-		Expand the brackets in the expression in the same
-		way bash does. For example:
-
-		this{ is, was} : "this is", "this was"
+		Compile the script by preparing the boilerplace and
+		running the actions defined.
 		"""
 
-		# Start by expanding the outer macro
-		
-
-
-	def runActions(self, actions):
-		"""
-		Run the specified set of actions
-		"""
-		for args in actions:
+		# Run the actions
+		for args in self.actions:
 
 			# Unshift action from the arguments
 			action = args.pop(0).lower()
+
+			# Check if this is a post-action
+			script = self.script_pre
+			if action[0:5] == "post-":
+
+				# Switch target script array to post
+				action = action[5:]
+				script = self.script_post
+
 
 			# [copy]
 			#
@@ -97,7 +143,7 @@ class Builder:
 			elif action == "readonly":
 
 				# Append a MACRO_RO action
-				self.script.append("MACRO_RO ${BASE_DIR}/%s ${GUEST_DIR}/%s" % (args[0], args[0]))
+				script.append("MACRO_RO ${BASE_DIR}/%s ${GUEST_DIR}/%s" % (args[0], args[0]))
 
 			# [writable]
 			# 
@@ -105,19 +151,41 @@ class Builder:
 			# by the first argument. Optionally create the directory
 			# structure defined in the second argument.
 			#
-			elif action == "bind":
+			elif action == "writable":
 
 				# Append a MACRO_RW action
-				self.script.append("MACRO_RW ${GUEST_DIR}/%s" % args[0])
+				script.append("MACRO_RW ${GUEST_DIR}/%s" % args[0])
 
 				# Process directory structure arguments
 				if len(args) > 1:
 
-					# Each one individually
-					for structDir in args[1].split(" "):
+					# Append a MACRO_MKDIR action for every directory
+					script.append("for XDIR in %s; do" % args[1])
+					script.append("\tMACRO_MKDIR ${GUEST_DIR}/${XDIR}")
+					script.append("done")
 
-						# Append a MACRO_MKDIR action
-						self.script.append("MACRO_MKDIR ${GUEST_DIR}/%s" % args[0])
+			# [touch]
+			# 
+			# Create a new, blank file in the first argument, using permissions
+			# optionally specified in the second argument.
+			#
+			elif action == "touch":
+
+				# Append a touch command
+				script.append("touch ${GUEST_DIR}/%s" % args[0])
+
+				# If we have a second argument, run chmod afterwards
+				if len(args) > 1:
+					script.append("chmod %s ${GUEST_DIR}/%s" % (args[1], args[0]))
+
+			# [set]
+			# 
+			# Set a value to a configurable parameter
+			#
+			elif action == "set":
+
+				# Update configurable parameter value
+				self.parameters[ args[0] ] = args[1]
 
 
 def showHelp():
@@ -125,10 +193,6 @@ def showHelp():
 	Display the help screen
 	"""
 	print "CernVM Litescript Build Utility v1.0"
-	print "This script creates a configuration file which is used by the"
-	print "cernvm-liteboot.sh in order to boot into a particular CernVM"
-	print "distribution in userland or in restricted environments"
-	print ""
 	print "Usage:"
 	print ""
 	print "  build-litescript.py <ruleset> <output>"
@@ -136,6 +200,10 @@ def showHelp():
 	print "Parameters:"
 	print " <ruleset> : The ruleset to use for building the LiteScript"
 	print "  <output> : The resulting configuration file"
+	print ""
+	print " This script creates a configuration file which is used by the"
+	print " cernvm-liteboot.sh in order to boot into a particular CernVM"
+	print " distribution in userland or in restricted environments"
 	print ""
 
 # Entry point
@@ -146,4 +214,12 @@ if __name__ == "__main__":
 		showHelp()
 		sys.exit(0)
 
-	# Load ruleset 
+	# Load ruleset
+	builder = Builder()
+	builder.loadActions( sys.argv[1] )
+
+	# Compile script
+	builder.compile()
+
+	# Write it down
+	builder.saveScript( sys.argv[2] )
