@@ -103,7 +103,7 @@ function MACRO_EXPAND {
 	fi
 
 	# Expand the files archive
-	tar -C ${BASE_DIR} -jxf ${ARCHIVE_FILE}
+	tar -C ${GUEST_DIR} -jxf ${ARCHIVE_FILE}
 
 }
 ################################################

@@ -79,12 +79,11 @@ class Builder:
 
 			# Encapsulate all actions in function
 			f.write("#\n")
-			f.write("# Proceduraly generated function for setting-up the CernVM\n")
-			f.write("# filesystem before final chroot.\n")
+			f.write("# Proceduraly generated ruleset macros for setting-up\n")
+			f.write("# the CernVM filesystem before final chroot.\n")
 			f.write("#\n")
 			f.write("function prepare_root {\n")
 			f.write("\tlocal GUEST_DIR=$1\n")
-			f.write("\t\n")
 
 			# Write pre-expand script
 			for line in self.script_pre:
