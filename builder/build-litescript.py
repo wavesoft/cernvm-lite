@@ -53,7 +53,7 @@ class Builder:
 		archiveName = "%s-files.tbz2" % outName
 
 		# Run tar to create the binary payload
-		print("tar -zcf %s%s -C %s %s %s" % (
+		ans = os.system("tar -zcf %s%s -C %s %s %s" % (
 			outDir,
 			archiveName,
 			self.baseDir,
@@ -65,16 +65,30 @@ class Builder:
 		# Open output file
 		with open(filename, "w") as f:
 
+			# Encapsulate all actions in function
+			f.write("#\n")
+			f.write("# Proceduraly generated function for setting-up the CernVM\n")
+			f.write("# filesystem before final chroot.\n")
+			f.write("#\n")
+			f.write("function MACRO_PREPARE_FS {\n")
+			f.write("\tlocal GUEST_DIR=$1\n")
+			f.write("\tlocal BASE_DIR=$2\n")
+			f.write("\tlocal SCRIPT_DIR=$( cd \"$( dirname \"${BASH_SOURCE[0]}\" )\" && pwd )\n")
+			f.write("\t\n")
+
 			# Write pre-expand script
 			for line in self.script_pre:
-				f.write("%s\n" % line)
+				f.write("\t%s\n" % line)
 
 			# Write expand code
-			f.write("MACRO_EXPAND %s\n" % archiveName)
+			f.write("\ttar -C ${GUEST_DIR} -zxf ${SCRIPT_DIR}/%s\n" % archiveName)
 
 			# Write post-expand script
 			for line in self.script_post:
-				f.write("%s\n" % line)
+				f.write("\t%s\n" % line)
+
+			# Close function
+			f.write("}\n")
 
 	def loadActions(self, filename):
 		"""
