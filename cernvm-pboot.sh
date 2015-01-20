@@ -21,10 +21,12 @@ if [ -z "${PROOT_BIN}" ]; then
 	fi
 fi
 
+# Start by bind-mounting /dev
+BIND_ARGS="-b /dev:/dev"
+
 # Read-only mount from $1 to $2
-BIND_ARGS=""
 function MACRO_RO {
-	BIND_ARGS="${BIND_ARGS} -b ${BASE_DIR}/$1:$1"
+	BIND_ARGS="${BIND_ARGS} -b ${BASE_DIR}/$1:/$1"
 	mkdir -p ${GUEST_DIR}/$1
 }
 # Create writable directory in $1
@@ -41,6 +43,17 @@ function MACRO_MKDIR {
 
 # Prepare filesystem
 MACRO_PREPARE_FS ${GUEST_DIR}
+
+# Prepare final mountpoint locations
+mkdir ${GUEST_DIR}/{proc,sys}
+
+# Prepare micro-init script
+cat <<EOF > ${GUEST_DIR}/sbin/liteinit
+#!/bin/sh
+mount -t proc proc /proc
+mount -t sysfs sys /sys
+EOF
+chmod +x ${GUEST_DIR}/sbin/liteinit
 
 # PRoot
 ${PROOT_BIN} ${BIND_ARGS} -r ${GUEST_DIR}

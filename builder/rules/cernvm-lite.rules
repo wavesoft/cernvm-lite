@@ -40,13 +40,10 @@ readonly:bin
 readonly:boot
 readonly:cgroup
 readonly:cvmfs
-readonly:dev
 readonly:lib
 readonly:lib64
-readonly:proc
 readonly:sbin
 readonly:selinux
-readonly:sys
 readonly:usr
 
 # Copy the /etc folder as it is
