@@ -18,25 +18,32 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-# Configuration
-BASE_DIR=/mnt/.ro/cvm3
+# Usage helper
+function usage {
+	echo "Usage: cernvm-mkrootfs.sh <cvmfs_base> <root> <litescript>"
+}
 
-# Require a path to the boot script
-[ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && exit 0
-BOOT_SCRIPT=$1
-shift
-
-# Create a temporary destination directory
-GUEST_DIR=$(mktemp -d)
-
-################################################
 # Read-only mount from $1 in host to $1 in guest
 function MACRO_RO {
-	ln -s ${BASE_DIR}/$1 ${GUEST_DIR}/$1
+
+	# Pre-expand read-only mounts are used only
+	# by userboot.sh
+	[ "$CHAIN" == "pre" ] && return
+
+	# Bind-mount overlaying the basic CVMFS mount
+	mount --bind ${BASE_DIR}/$1 ${GUEST_DIR}/$1
+
 }
 # Create writable directory in $1
 function MACRO_RW {
-	mkdir -p ${GUEST_DIR}/$1
+
+	# Create a new temporary directory
+	local DIR_NAME=$(basename $1)
+	local TMPDIR=$(mktemp -d /tmp/rw-${DIR_NAME}.XXXXXXXXXX)
+
+	# Bind-mount to that
+	mount --bind ${TMPDIR} ${GUEST_DIR}/$1
+
 }
 # Create directoriy in $*
 function MACRO_MKDIR {
@@ -61,11 +68,26 @@ function MACRO_EXPAND {
 }
 ################################################
 
+# Require a path to the boot script
+[ -z "$1" ] && echo "ERROR: Please specify the path to the mounted CernVM CVMFS repository!" && usage && exit 0
+[ -z "$2" ] && echo "ERROR: Please specify the path to the root directory!" && usage && exit 0
+[ -z "$3" ] && echo "ERROR: Please specify the path to the litescript!" && usage && exit 0
+CVMFS_RO_DIR=$1; shift
+GUEST_DIR=$1; shift
+BOOT_SCRIPT=$1; shift
+
+# Base directory is the /cvm3 inside cvmfs
+BASE_DIR="${CVMFS_RO_DIR}/cvm3"
+
+# Make sure guest directory exists
+[ ! -d $GUEST_DIR ] && mkdir $GUEST_DIR
+
+# Bind-mount the base read-only filesystem
+mount --bind ${BASE_DIR} ${GUEST_DIR}
+
 # Source boot script
 . ${BOOT_SCRIPT}
 
 # Prepare filesystem
 prepare_root ${GUEST_DIR}
 
-# Chroot
-chroot ${GUEST_DIR}

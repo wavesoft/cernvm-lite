@@ -18,8 +18,6 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-################################################
-
 # Helper function to set-up CVMFS
 function mount_cvmfs {
 	local MOUNTPOINT=$1
@@ -73,7 +71,6 @@ EOF
 	
 	# Mount the CVMFS repository
 	cvmfs2 -o allow_other,config=${CMVFS_CONFIG} ${CVMFS_REPOS} ${MOUNTPOINT}
-
 }
 
 # Read-only mount from $1 to $2

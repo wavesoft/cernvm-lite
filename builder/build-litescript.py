@@ -86,13 +86,16 @@ class Builder:
 			f.write("\tlocal GUEST_DIR=$1\n")
 
 			# Write pre-expand script
+			f.write("\tlocal CHAIN=pre\n")
 			for line in self.script_pre:
 				f.write("\t%s\n" % line)
 
 			# Write expand macro that expands compressed files
+			f.write("\tCHAIN=expand\n")
 			f.write("\tMACRO_EXPAND %s\n" % self.getParameter("tag", "default"))
 
 			# Write post-expand script
+			f.write("\tCHAIN=post\n")
 			for line in self.script_post:
 				f.write("\t%s\n" % line)
 
@@ -142,6 +145,7 @@ class Builder:
 				action = action[5:]
 				script = self.script_post
 
+			# ------------------------------------------------------
 
 			# [copy]
 			#
@@ -150,6 +154,11 @@ class Builder:
 			# the second argument.
 			#
 			if action == "copy":
+
+				# Append a MACRO_RW action in order to create
+				# a writable directory in the location where the
+				# files will be extracted into
+				script.append("MACRO_RW %s" % args[0])
 
 				# Store directory to copy in dirInclude
 				self.dirInclude.append( args[0] )
@@ -209,6 +218,8 @@ class Builder:
 
 				# Update configurable parameter value
 				self.parameters[ args[0] ] = args[1]
+
+			# ------------------------------------------------------
 
 
 def showHelp():
