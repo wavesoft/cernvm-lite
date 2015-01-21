@@ -122,9 +122,10 @@ PROOT_BIN=$(which proot 2>/dev/null)
 if [ -z "${PROOT_BIN}" ]; then
 	PROOT_BIN="./proot"
 	if [ ! -f "${PROOT_BIN}" ]; then
-		echo -n "Downloading proot utility..."
+		echo -n "CernVM-Lite: Downloading proot utility..."
 		wget -q -O ${PROOT_BIN} http://static.proot.me/proot-x86_64
 		[ $? -ne 0 ] && echo "error" && rm ${PROOT_BIN} && exit 1
+		chmod +x ${PROOT_BIN}
 		echo "ok"
 	fi
 fi
