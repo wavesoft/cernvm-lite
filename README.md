@@ -29,6 +29,8 @@ The syntax of the build rules is the following:
 [pre/post-]<directive>:<path>[:<optional additional parameters>]
 ```
 
+The pre/post prefix defines if the rule should be applied before or after the expansion of the files collected with the `copy` directive. By default all directives are assumed to be prefixed with the term `pre-`.
+
 ### `copy:<path>`
 
 The `copy` directive denotes that the specified path should be copied from the upstream filesystem to the guest filesystem in a writable directory. This is effectively a costly *copy-on-write* operation that should only be used in small directories. 
@@ -73,9 +75,9 @@ The script has the following syntax:
 
 Where:
 
- * __<cvmfs base>__ is the base directory in CVMFS where the root filesystem files are located.
- * __<root>__ is the root directory where you want to deploy the CernVM filesystem.
- * __<boot script>__ is the boot script to use for setting-up the root filesystem.
+ * __cvmfs base__ is the base directory in CVMFS where the root filesystem files are located.
+ * __root__ is the root directory where you want to deploy the CernVM filesystem.
+ * __boot script__ is the boot script to use for setting-up the root filesystem.
 
 ## cernvm-userboot.sh
 
@@ -91,7 +93,7 @@ The script has the following syntax:
 
 Where:
 
- * __<boot script>__ is the boot script to use for setting-up the root filesystem.
+ * __boot script__ is the boot script to use for setting-up the root filesystem.
 
 # Configuration File Format
 
@@ -106,10 +108,10 @@ The function itself is just a sequence of macros, following the same order as in
 
 The macros used are the following:
 
- * __`MACRO_RO`__ `<path>`: Perform a read-only mount from the `${BASE_DIR}/<path>` to `${GUEST_DIR}/<path>`. This is equivalent to either a *symbolic link* or to a *bind-mount* between the two directories.
- * __`MACRO_RW`__ `<path>`: Create a blank, writable directory in `${GUEST_DIR}/<path>`. This is equivalent to *mkdir* or to *bind-mount* to a writable scratch storage.
- * __`MACRO_MKDIR`__ `<path>`: Create a new directory. This is called for a directory previous created with **MACRO_RW** in order to create the internal directory structure.
- * __`MACRO_EXPAND`__ `<tag_id>`: Expand the list of files (collected with the `copy` directive in the rules file) with the specified tag ID. The script could either be located in the same folder with the boot script, or in a particular directory in the CVMFS repository.
+ * __MACRO_RO__ `<path>`: Perform a read-only mount from the `${BASE_DIR}/<path>` to `${GUEST_DIR}/<path>`. This is equivalent to either a *symbolic link* or to a *bind-mount* between the two directories.
+ * __MACRO_RW__ `<path>`: Create a blank, writable directory in `${GUEST_DIR}/<path>`. This is equivalent to *mkdir* or to *bind-mount* to a writable scratch storage.
+ * __MACRO_MKDIR__ `<path>`: Create a new directory. This is called for a directory previous created with `MACRO_RW` in order to create the internal directory structure.
+ * __MACRO_EXPAND__ `<tag_id>`: Expand the list of files (collected with the `copy` directive in the rules file) with the specified tag ID. The script could either be located in the same folder with the boot script, or in a particular directory in the CVMFS repository.
 
 # License 
 
