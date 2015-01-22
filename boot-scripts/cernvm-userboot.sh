@@ -18,6 +18,11 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+# Usage helper
+function usage {
+	echo "Usage: cernvm-userboot.sh <boot script>"
+}
+
 # Helper function to set-up CVMFS
 function mount_cvmfs {
 	local MOUNTPOINT=$1
@@ -73,6 +78,13 @@ EOF
 	cvmfs2 -o allow_other,config=${CMVFS_CONFIG} ${CVMFS_REPOS} ${MOUNTPOINT}
 }
 
+# Validate the boot script
+function is_script_invalid {
+	[ "$(cat $1 | head -n1 | tr -d '\n')" != "#!/bin/false" ] && return 1
+	[ "$(cat $1 | head -n1 | tail -n1 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 1
+	return 0
+}
+
 # Read-only mount from $1 to $2
 function MACRO_RO {
 	BIND_ARGS="${BIND_ARGS} -b ${BASE_DIR}/$1:/$1"
@@ -113,9 +125,12 @@ GUEST_DIR=""
 BIND_ARGS=""
 
 # Require a path to the boot script
-[ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && exit 0
+[ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && usage && exit 1
 BOOT_SCRIPT=$1
 shift
+
+# Validate boot script
+is_script_invalid ${BOOT_SCRIPT} && echo "ERROR: This is not a valid boot script!" && exit 2
 
 # Check if we have proot utility, otherwise download it
 PROOT_BIN=$(which proot 2>/dev/null)

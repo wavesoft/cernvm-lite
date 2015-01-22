@@ -63,4 +63,69 @@ Currently there are two versions of build scripts: One used for creating a boota
 
 ## cernvm-mkrootfs.sh
 
-This script is used for creating a bootable filesystem root directory.
+This script is used for creating a bootable filesystem root directory. This is useful when you want to *chroot* or create a *linux container* in the resulting directory.
+
+### Usage
+
+The script has the following syntax:
+
+    cernvm-mkrootfs.sh <cvmfs base> <root> <boot script>
+
+Where:
+
+ * __<cvmfs base>__ is the base directory in CVMFS where the root filesystem files are located.
+ * __<root>__ is the root directory where you want to deploy the CernVM filesystem.
+ * __<boot script>__ is the boot script to use for setting-up the root filesystem.
+
+## cernvm-userboot.sh
+
+This script is used for booting CernVM entirely in userspace using the `proot` utility. This is a compact script, that automatically downloads the proot binary, sets-up and mounts the cvmfs repository and starts a jailed shell.
+
+The only requirement is for the `cvmfs2` binary to exist in the environment.
+
+### Usage:
+
+The script has the following syntax:
+
+    cernvm-userboot.sh <boot script>
+
+Where:
+
+ * __<boot script>__ is the boot script to use for setting-up the root filesystem.
+
+# Configuration File Format
+
+The configuration file is essentialy a shell script library which consists of a single function called `prepare_root`. For identification and protection against malicious uses, the file begins with the following header:
+
+    #!/bin/false
+    #BOOT_CONFIG=1.0
+
+The `/bin/false` hashbang is used in order to prevent accidental run of the script, while the second line defines the version of the boot script configuration. Both lines must be present in order to be considered a valid boot script file.
+
+The function itself is just a sequence of macros, following the same order as in the ruleset file. These macros should be pre-defined before the script file is included. This way, the boot script can define different booting behaviours using the same base ruleset.
+
+The macros used are the following:
+
+ * __`MACRO_RO`__ `<path>`: Perform a read-only mount from the `${BASE_DIR}/<path>` to `${GUEST_DIR}/<path>`. This is equivalent to either a *symbolic link* or to a *bind-mount* between the two directories.
+ * __`MACRO_RW`__ `<path>`: Create a blank, writable directory in `${GUEST_DIR}/<path>`. This is equivalent to *mkdir* or to *bind-mount* to a writable scratch storage.
+ * __`MACRO_MKDIR`__ `<path>`: Create a new directory. This is called for a directory previous created with **MACRO_RW** in order to create the internal directory structure.
+ * __`MACRO_EXPAND`__ `<tag_id>`: Expand the list of files (collected with the `copy` directive in the rules file) with the specified tag ID. The script could either be located in the same folder with the boot script, or in a particular directory in the CVMFS repository.
+
+# License 
+
+CernVM Environment Lite Scripts 
+Copyright (C) 2015  Ioannis Charalampidis, PH-SFT, CERN
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.

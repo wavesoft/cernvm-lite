@@ -20,7 +20,14 @@
 
 # Usage helper
 function usage {
-	echo "Usage: cernvm-mkrootfs.sh <cvmfs_base> <root> <litescript>"
+	echo "Usage: cernvm-mkrootfs.sh <cvmfs base> <root> <boot script>"
+}
+
+# Validate the boot script
+function is_script_invalid {
+	[ "$(cat $1 | head -n1 | tr -d '\n')" != "#!/bin/false" ] && return 1
+	[ "$(cat $1 | head -n1 | tail -n1 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 1
+	return 0
 }
 
 # Read-only mount from $1 in host to $1 in guest
@@ -69,12 +76,15 @@ function MACRO_EXPAND {
 ################################################
 
 # Require a path to the boot script
-[ -z "$1" ] && echo "ERROR: Please specify the path to the mounted CernVM CVMFS repository!" && usage && exit 0
-[ -z "$2" ] && echo "ERROR: Please specify the path to the root directory!" && usage && exit 0
-[ -z "$3" ] && echo "ERROR: Please specify the path to the litescript!" && usage && exit 0
+[ -z "$1" ] && echo "ERROR: Please specify the path to the mounted CernVM CVMFS repository!" && usage && exit 1
+[ -z "$2" ] && echo "ERROR: Please specify the path to the root directory!" && usage && exit 1
+[ -z "$3" ] && echo "ERROR: Please specify the path to the boot script!" && usage && exit 1
 CVMFS_RO_DIR=$1; shift
 GUEST_DIR=$1; shift
 BOOT_SCRIPT=$1; shift
+
+# Validate boot script
+is_script_invalid ${BOOT_SCRIPT} && echo "ERROR: This is not a valid boot script!" && exit 2
 
 # Base directory is the /cvm3 inside cvmfs
 BASE_DIR="${CVMFS_RO_DIR}/cvm3"

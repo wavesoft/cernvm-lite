@@ -77,6 +77,10 @@ class Builder:
 		# Open output file
 		with open(filename, "w") as f:
 
+			# Header
+			f.write("#!/bin/false\n")
+			f.write("#BOOT_CONFIG=1.0\n")
+
 			# Encapsulate all actions in function
 			f.write("#\n")
 			f.write("# Proceduraly generated ruleset macros for setting-up\n")
