@@ -70,7 +70,7 @@ EOF
 
 # Read-only mount from $1 to $2
 function MACRO_RO {
-	PARROT_ARGS="${PARROT_ARGS} -M '/$1=/cvmfs/${CVMFS_REPOS}/cvm3/$1'"
+	PARROT_ARGS="${PARROT_ARGS} -M '/$1=${BASE_DIR}/$1'"
 }
 # Create writable directory in $1
 function MACRO_RW {
@@ -99,6 +99,9 @@ function MACRO_EXPAND {
 
 }
 ################################################
+
+# Base directory (inside parrot environment)
+BASE_DIR="/cvmfs/cernvm-devel.cern.ch/cvm3"
 
 # Require a path to the boot script
 [ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && usage && exit 1
@@ -135,6 +138,7 @@ PARROT_ARGS="${PARROT_ARGS} -t \"${PARROT_DIR}\""
 # Setup CVMFS 
 setup_cvmfs ${CVMFS_DIR}
 PARROT_ARGS="${PARROT_ARGS} --cvmfs-repos=\"${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}\""
+PARROT_ARGS="${PARROT_ARGS} -M '/=${BASE_DIR}'"
 
 # Source boot script
 . ${BOOT_SCRIPT}
