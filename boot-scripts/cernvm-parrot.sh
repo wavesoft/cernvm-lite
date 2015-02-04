@@ -133,7 +133,7 @@ PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 PARROT_ARGS="${PARROT_ARGS} -t \"${PARROT_DIR}\""
 
 # Setup CVMFS 
-setup_cvmfs ${CVMFS_RO_DIR}
+setup_cvmfs ${CVMFS_DIR}
 PARROT_ARGS="${PARROT_ARGS} --cvmfs-repos=\"${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}\""
 
 # Source boot script
