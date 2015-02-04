@@ -33,10 +33,28 @@ function is_script_invalid {
 # Setup CVMFS configuration
 function setup_cvmfs {
 	local CONFIG_DIR=$1
-	local REPOS_NAME=$1
+	local REPOS_NAME=$2
 
 	# Set default repository name
-	[ -z "$REPOS_NAME" ] && REPOS_NAME="cernvm-devel.cern.ch"
+	if [ -z "$REPOS_NAME" ]; then
+
+		# Default repository is known
+		CVMFS_REPOS="cernvm-devel.cern.ch"
+		CVMFS_SERVER="hepvm.cern.ch"
+		CVMFS_URL=http://${CVMFS_SERVER}/cvmfs/${CVMFS_REPOS}
+
+	else
+
+		# Get the CERN repository
+		X_CHECK_URL=$(curl -s http://cvmfs-monitor.cern.ch/cvmfs-monitor/${REPOS_NAME}/ | awk '/"CERN"/{getline; print $3}' | tr -d '"')
+		[ -z "$X_CHECK_URL" ] && echo "ERROR: Could not find details for repository ${REPOS_NAME}" && exit 1
+
+		# Get the CERN repository
+		CVMFS_REPOS="${REPOS_NAME}"
+		CVMFS_URL=$(curl -s http://cvmfs-monitor.cern.ch${X_CHECK_URL} | grep "url" | awk '{print $3}' | sed -r 's/"(.*)".*/\1/')
+		[ -z "$CVMFS_URL" ] && echo "ERROR: Could not find URL for repository ${REPOS_NAME}" && exit 1
+
+	fi
 
 	# Include repos in conf_dir
 	CONFIG_DIR="${CONFIG_DIR}/${REPOS_NAME}"
@@ -52,11 +70,6 @@ function setup_cvmfs {
 	else
 		CVMFS_PROXY="${CVMFS_HTTP_PROXY}"
 	fi
-
-	# Setup CVMFS URL (expose CVMFS_SERVER, CVMFS_REPOS, CVMFS_URL)
-	CVMFS_SERVER="hepvm.cern.ch"
-	CVMFS_REPOS="${REPOS_NAME}"
-	CVMFS_URL=http://${CVMFS_SERVER}/cvmfs/${CVMFS_REPOS}
 
 	# Setup CVMFS key (expose CMVFS_CONFIG)
 	CVMFS_KEYS="${CONFIG_DIR}/keys"
@@ -152,6 +165,7 @@ setup_cvmfs ${CVMFS_DIR}
 PARROT_CVMFS_REPO="${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
 
 # Setup additional CVMFS directories
+# (Not (yet?) fully supported by parrot)
 REPOS=""
 for REPO in $REPOS; do
 	setup_cvmfs ${CVMFS_DIR} ${REPO}
