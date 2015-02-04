@@ -53,6 +53,10 @@ The optional parameter `structure` is a space-separated, wildcard-capable list o
 
 The `touch` directive creates a blank file in the given path.
 
+### `import:<file>`
+
+The `import` directive denotes that the specified file should be copied from the currently running operating system to our isolated environment.
+
 ### `set:<parameter>:<value>`
 
 The `set` directive sets the value of an arbitrary parameter used either by the build or by the boot script. Currently the following parameters are used:
@@ -112,6 +116,7 @@ The macros used are the following:
  * __MACRO_RW__ `<path>`: Create a blank, writable directory in `${GUEST_DIR}/<path>`. This is equivalent to *mkdir* or to *bind-mount* to a writable scratch storage.
  * __MACRO_MKDIR__ `<path>`: Create a new directory. This is called for a directory previous created with `MACRO_RW` in order to create the internal directory structure.
  * __MACRO_EXPAND__ `<tag_id>`: Expand the list of files (collected with the `copy` directive in the rules file) with the specified tag ID. The script could either be located in the same folder with the boot script, or in a particular directory in the CVMFS repository.
+ * __MACRO_IMPORT__ `<filename>`: Import a file from the current operating system into the sandbox. This is particulary useful for adopting network configuration (etc. /etc/resolv.conf)
 
 # License 
 

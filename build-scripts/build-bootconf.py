@@ -160,6 +160,11 @@ class Builder:
 			#
 			if action == "copy":
 
+				# Remove heading slash
+				if args[0][0] == '/':
+					print "WARNING: Removing heading / from directive '%s'" % args
+					args[0] = args[0][1:]
+
 				# Append a MACRO_RW action in order to create
 				# a writable directory in the location where the
 				# files will be extracted into
@@ -179,6 +184,11 @@ class Builder:
 			#
 			elif action == "readonly":
 
+				# Remove heading slash
+				if args[0][0] == '/':
+					print "WARNING: Removing heading / from directive '%s'" % args
+					args[0] = args[0][1:]
+
 				# Append a MACRO_RO action
 				script.append("MACRO_RO %s" % args[0])
 
@@ -189,6 +199,11 @@ class Builder:
 			# structure defined in the second argument.
 			#
 			elif action == "writable":
+
+				# Remove heading slash
+				if args[0][0] == '/':
+					print "WARNING: Removing heading / from directive '%s'" % args
+					args[0] = args[0][1:]
 
 				# Append a MACRO_RW action
 				script.append("MACRO_RW %s" % args[0])
@@ -208,12 +223,31 @@ class Builder:
 			#
 			elif action == "touch":
 
+				# Remove heading slash
+				if args[0][0] == '/':
+					print "WARNING: Removing heading / from directive '%s'" % args
+					args[0] = args[0][1:]
+
 				# Append a touch command
 				script.append("touch ${GUEST_DIR}/%s" % args[0])
 
 				# If we have a second argument, run chmod afterwards
 				if len(args) > 1:
 					script.append("chmod %s ${GUEST_DIR}/%s" % (args[1], args[0]))
+
+			# [import]
+			# 
+			# Import a file from the host OS into the isolated environment.
+			#
+			elif action == "import":
+
+				# Remove heading slash
+				if args[0][0] == '/':
+					print "WARNING: Removing heading / from directive '%s'" % args
+					args[0] = args[0][1:]
+
+				# Append a MACRO_RO action
+				script.append("MACRO_IMPORT %s" % args[0])
 
 			# [set]
 			# 

@@ -82,6 +82,10 @@ function MACRO_RW {
 function MACRO_MKDIR {
 	mkdir -p ${GUESTRW_DIR}/$1
 }
+# Import files from the current OS
+function MACRO_IMPORT {
+	cp /$1 ${GUESTRW_DIR}/$1
+}
 # Expand archive with the tag id in $1
 function MACRO_EXPAND {
 
@@ -153,7 +157,7 @@ mkdir -p ${GUESTRW_DIR}/tmp/${USERNAME}
 PARROT_ARGS="${PARROT_ARGS} -M '/home/${USERNAME}=${GUESTRW_DIR}/tmp/${USERNAME}"
 
 # PRoot
-echo "CernVM-Lite: Starting CernVM in userland v${CVMFS_VERSION}"
+echo "CernVM-Lite: Starting CernVM in userland"
 eval "${PARROT_BIN} ${PARROT_ARGS} /bin/bash $*"
 
 # Remove directory upon exit

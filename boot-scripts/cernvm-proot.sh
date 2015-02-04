@@ -114,6 +114,11 @@ function MACRO_RW {
 function MACRO_MKDIR {
 	mkdir -p ${GUEST_DIR}/$1
 }
+# Import files from the current OS
+function MACRO_IMPORT {
+	# PROOT does this with -R already
+	return
+}
 # Expand archive with the tag id in $1
 function MACRO_EXPAND {
 

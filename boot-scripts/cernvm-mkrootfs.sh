@@ -56,6 +56,11 @@ function MACRO_RW {
 function MACRO_MKDIR {
 	mkdir -p ${GUEST_DIR}/$1
 }
+# Import files from the current OS
+function MACRO_IMPORT {
+	# Not used for mkrootfs
+	return
+}
 # Expand archive with the tag id in $1
 function MACRO_EXPAND {
 
