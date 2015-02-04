@@ -70,7 +70,6 @@ EOF
 
 # Read-only mount from $1 to $2
 function MACRO_RO {
-	[ "$1" == "cvmfs" ] && return 
 	PARROT_ARGS="${PARROT_ARGS} -M '/$1=${BASE_DIR}/$1'"
 }
 # Create writable directory in $1
@@ -131,13 +130,13 @@ if [ -z "${PARROT_BIN}" ]; then
 	fi
 fi
 
-# Create a temporary destination directory
+# Create a temporary working directory
 TEMP_DIR=$(mktemp -d)
 GUESTRW_DIR="${TEMP_DIR}/root" && mkdir ${GUESTRW_DIR}
 CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir ${CVMFS_DIR}
 PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 
-# Setup origial parrot args
+# Setup basic parrot args
 PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
 
 # Setup CVMFS 
@@ -153,12 +152,23 @@ prepare_root ${GUESTRW_DIR}
 
 # Create a home directory for the user
 USERNAME=$(whoami)
-mkdir -p ${GUESTRW_DIR}/tmp/${USERNAME}
-PARROT_ARGS="${PARROT_ARGS} -M '/home/${USERNAME}=${GUESTRW_DIR}/tmp/${USERNAME}'"
+mkdir -p ${GUESTRW_DIR}/home/${USERNAME}
+
+# Create bootstrap script
+BOOTSTRAP_BIN=${TEMP_DIR}/bootstrap.sh
+cat <<EOF > ${BOOTSTRAP_BIN}
+#!/bin/bash
+# Display banner
+CVMFS_VERSION=\$(cat /cvmfs/cernvm-devel.cern.ch/update-packs/cvm3/latest | grep version | awk -F'=' '{print \$2}')
+echo "CernVM-Lite: Welcome to CernVM v\${CVMFS_VERSION}"
+# Start bash
+/bin/bash
+EOF
+chmod +x ${BOOTSTRAP_BIN}
 
 # PRoot
 echo "CernVM-Lite: Starting CernVM in userland"
-eval "${PARROT_BIN} ${PARROT_ARGS} /bin/bash $*"
+eval "${PARROT_BIN} ${PARROT_ARGS} $* ${BOOTSTRAP_BIN}"
 
 # Remove directory upon exit
 echo "CernVM-Lite: Cleaning-up environment"
