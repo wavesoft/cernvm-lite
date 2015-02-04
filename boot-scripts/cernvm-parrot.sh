@@ -158,11 +158,15 @@ mkdir -p ${GUESTRW_DIR}/home/${USERNAME}
 BOOTSTRAP_BIN=${GUESTRW_DIR}/home/${USERNAME}/.bootstrap
 cat <<EOF > ${BOOTSTRAP_BIN}
 #!/bin/bash
+
 # Display banner
 CVMFS_VERSION=\$(cat /cvmfs/cernvm-devel.cern.ch/update-packs/cvm3/latest | grep version | awk -F'=' '{print \$2}')
 echo "CernVM-Lite: Welcome to CernVM v\${CVMFS_VERSION}"
-# Start bash in a clean environment
+
+# Prepare environment
 export HOME=/home/${USERNAME}
+export TMPDIR=/tmp
+
 /bin/bash
 EOF
 chmod +x ${BOOTSTRAP_BIN}
