@@ -154,7 +154,7 @@ prepare_root ${GUESTRW_DIR}
 # Create a home directory for the user
 USERNAME=$(whoami)
 mkdir -p ${GUESTRW_DIR}/tmp/${USERNAME}
-PARROT_ARGS="${PARROT_ARGS} -M '/home/${USERNAME}=${GUESTRW_DIR}/tmp/${USERNAME}"
+PARROT_ARGS="${PARROT_ARGS} -M '/home/${USERNAME}=${GUESTRW_DIR}/tmp/${USERNAME}'"
 
 # PRoot
 echo "CernVM-Lite: Starting CernVM in userland"
