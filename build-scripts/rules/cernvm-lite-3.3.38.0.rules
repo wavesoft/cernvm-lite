@@ -47,7 +47,6 @@ set:tag:3.3.38.0
 readonly:bin
 readonly:boot
 readonly:cgroup
-readonly:cvmfs
 readonly:lib
 readonly:lib64
 readonly:sbin
