@@ -57,7 +57,7 @@ function setup_cvmfs {
 	fi
 
 	# Include repos in conf_dir
-	CONFIG_DIR="${CONFIG_DIR}/${REPOS_NAME}"
+	CONFIG_DIR="${CONFIG_DIR}/${CVMFS_REPOS}"
 	mkdir -p ${CONFIG_DIR}
 
 	# Setup cache (expose CVMFS_CACHE)
