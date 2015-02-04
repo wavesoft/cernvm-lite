@@ -70,6 +70,7 @@ EOF
 
 # Read-only mount from $1 to $2
 function MACRO_RO {
+	[ "$1" == "cvmfs" ] && return 
 	PARROT_ARGS="${PARROT_ARGS} -M '/$1=${BASE_DIR}/$1'"
 }
 # Create writable directory in $1
@@ -133,12 +134,11 @@ CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir ${CVMFS_DIR}
 PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 
 # Setup origial parrot args
-PARROT_ARGS="${PARROT_ARGS} -t \"${PARROT_DIR}\""
+PARROT_ARGS="${PARROT_ARGS} -f -t \"${PARROT_DIR}\""
 
 # Setup CVMFS 
 setup_cvmfs ${CVMFS_DIR}
 PARROT_ARGS="${PARROT_ARGS} --cvmfs-repos=\"${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}\""
-PARROT_ARGS="${PARROT_ARGS} -M '/=${BASE_DIR}'"
 
 # Source boot script
 . ${BOOT_SCRIPT}
