@@ -161,7 +161,8 @@ cat <<EOF > ${BOOTSTRAP_BIN}
 # Display banner
 CVMFS_VERSION=\$(cat /cvmfs/cernvm-devel.cern.ch/update-packs/cvm3/latest | grep version | awk -F'=' '{print \$2}')
 echo "CernVM-Lite: Welcome to CernVM v\${CVMFS_VERSION}"
-# Start bash
+# Start bash in a clean environment
+export PATH=/home/${USERNAME}
 /bin/bash
 EOF
 chmod +x ${BOOTSTRAP_BIN}
