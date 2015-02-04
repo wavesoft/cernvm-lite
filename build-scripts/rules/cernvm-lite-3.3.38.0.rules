@@ -79,6 +79,6 @@ writable:tmp
 writable:usr/local:{bin,etc,games,include,lib,lib64,libexec,sbin,src,share/{applications,info,perl5,man/man{1,1x,2,2x,3,3x,4,4x,5,5x,6,6x,7,7x,8,8x,9,9x,n}}}
 
 # Import some files from the base operating system
-import:etc/resolv.conf
-import:etc/passwd
-import:etc/hosts
+post-import:etc/resolv.conf
+post-import:etc/passwd
+post-import:etc/hosts
