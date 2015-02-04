@@ -20,27 +20,37 @@
 
 # Usage helper
 function usage {
-	echo "Usage: cernvm-userboot.sh <boot script>"
+	echo "Usage: cernvm-parrot.sh <boot script>"
 }
 
-# Helper function to set-up CVMFS
-function mount_cvmfs {
-	local MOUNTPOINT=$1
-	local TEMP=$2
+# Validate the boot script
+function is_script_invalid {
+	[ "$(cat $1 | head -n1 | tr -d '\n')" != "#!/bin/false" ] && return 1
+	[ "$(cat $1 | head -n1 | tail -n1 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 1
+	return 0
+}
 
-	# Setup cache
-	local CVMFS_CACHE="${TEMP}/cache"
-	mkdir ${CVMFS_CACHE}
+# Setup CVMFS configuration
+function setup_cvmfs {
+	local CONFIG_DIR=$1
 
-	# Setup CVMFS URL
-	local CVMFS_SERVER="hepvm.cern.ch"
-	local CVMFS_REPOS="cernvm-devel.cern.ch"
-	local CVMFS_URL=http://${CVMFS_SERVER}/cvmfs/${CVMFS_REPOS}
+	# Setup cache (expose CVMFS_CACHE)
+	CVMFS_CACHE="${CONFIG_DIR}/cache"
+	mkdir -p ${CVMFS_CACHE}
 
-	# Setup CVMFS key
-	local CVMFS_KEYS="${TEMP}/keys"
+	# Setup default CVMFS proxy
+	CVMFS_PROXY="auto;DIRECT"
+
+	# Setup CVMFS URL (expose CVMFS_SERVER, CVMFS_REPOS, CVMFS_URL)
+	CVMFS_SERVER="hepvm.cern.ch"
+	CVMFS_REPOS="cernvm-devel.cern.ch"
+	CVMFS_URL=http://${CVMFS_SERVER}/cvmfs/${CVMFS_REPOS}
+
+	# Setup CVMFS key (expose CMVFS_CONFIG)
+	CVMFS_KEYS="${CONFIG_DIR}/keys"
+	CVMFS_PUB_KEY="${CVMFS_KEYS}/${CVMFS_REPOS}.pub"
 	mkdir -p ${CVMFS_KEYS}
-	cat <<EOF > ${CVMFS_KEYS}/${CVMFS_REPOS}.pub
+	cat <<EOF > ${CVMFS_PUB_KEY}
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2sb8SnVVIBeYk7f2bhmn
 uoiZ7WjgKZ90DEV5OJbqrVUsn6S+JJRE+5u8OcLY0wrcpdpNrk9YssSeTf305nO7
@@ -52,36 +62,6 @@ RwIDAQAB
 -----END PUBLIC KEY-----
 EOF
 
-	# Setup configuration
-	local CMVFS_CONFIG=${TEMP}/${CVMFS_REPOS}.conf
-	cat <<EOF > ${CMVFS_CONFIG}
-CVMFS_CACHE_BASE=${CVMFS_CACHE}
-CVMFS_RELOAD_SOCKETS=${CVMFS_CACHE}
-CVMFS_SERVER_URL=${CVMFS_URL}
-CVMFS_HTTP_PROXY="auto;DIRECT"
-CVMFS_KEYS_DIR=${CVMFS_KEYS}
-CVMFS_CHECK_PERMISSIONS=yes
-CVMFS_IGNORE_SIGNATURE=no
-CVMFS_AUTO_UPDATE=no
-CVMFS_NFS_SOURCE=no
-CVMFS_PROXY_RESET_AFTER=1800
-CVMFS_MAX_RETRIES=2
-CVMFS_TIMEOUT=10
-CVMFS_TIMEOUT_DIRECT=10
-CVMFS_BACKOFF_INIT=2
-CVMFS_BACKOFF_MAX=12
-CVMFS_USYSLOG=${CVMFS_CACHE}/usyslog
-EOF
-	
-	# Mount the CVMFS repository
-	cvmfs2 -o allow_other,config=${CMVFS_CONFIG} ${CVMFS_REPOS} ${MOUNTPOINT}
-}
-
-# Validate the boot script
-function is_script_invalid {
-	[ "$(cat $1 | head -n1 | tr -d '\n')" != "#!/bin/false" ] && return 1
-	[ "$(cat $1 | head -n1 | tail -n1 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 1
-	return 0
 }
 
 # Read-only mount from $1 to $2
@@ -132,14 +112,16 @@ shift
 is_script_invalid ${BOOT_SCRIPT} && echo "ERROR: This is not a valid boot script!" && exit 2
 
 # Check if we have proot utility, otherwise download it
-PROOT_BIN=$(which proot 2>/dev/null)
-if [ -z "${PROOT_BIN}" ]; then
-	PROOT_BIN="./proot"
-	if [ ! -f "${PROOT_BIN}" ]; then
-		echo -n "CernVM-Lite: Downloading proot utility..."
-		wget -q -O ${PROOT_BIN} http://static.proot.me/proot-x86_64
-		[ $? -ne 0 ] && echo "error" && rm ${PROOT_BIN} && exit 1
-		chmod +x ${PROOT_BIN}
+PARROT_BIN=$(which parrot_run 2>/dev/null)
+if [ -z "${PARROT_BIN}" ]; then
+	# We need to simplify this...
+	PARROT_BIN="./cctools-4.3.2-x86_64-redhat6/bin/parrot_run"
+	if [ ! -f "${PARROT_BIN}" ]; then
+		echo -n "CernVM-Lite: Downloading CCTools..."
+		wget -q http://ccl.cse.nd.edu/software/files/cctools-4.3.2-x86_64-redhat6.tar.gz
+		[ $? -ne 0 ] && echo "error" && rm cctools-4.3.2-x86_64-redhat6.tar.gz && exit 1
+		tar -zxf cctools-4.3.2-x86_64-redhat6.tar.gz
+		[ $? -ne 0 ] && echo "error" && rm cctools-4.3.2-x86_64-redhat6.tar.gz && exit 1
 		echo "ok"
 	fi
 fi
@@ -169,7 +151,7 @@ prepare_root ${GUEST_DIR}
 
 # PRoot
 echo "CernVM-Lite: Starting CernVM in userland v${CVMFS_VERSION}"
-${PROOT_BIN} ${BIND_ARGS} -R ${GUEST_DIR} -w / $*
+${PARROT_BIN} ${BIND_ARGS} -R ${GUEST_DIR} -w / $*
 
 # Remove directory upon exit
 echo "CernVM-Lite: Cleaning-up environment"
