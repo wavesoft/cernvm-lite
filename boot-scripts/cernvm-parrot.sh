@@ -155,7 +155,7 @@ USERNAME=$(whoami)
 mkdir -p ${GUESTRW_DIR}/home/${USERNAME}
 
 # Create bootstrap script
-BOOTSTRAP_BIN=${TEMP_DIR}/bootstrap.sh
+BOOTSTRAP_BIN=${GUESTRW_DIR}/home/${USERNAME}/.bootstrap
 cat <<EOF > ${BOOTSTRAP_BIN}
 #!/bin/bash
 # Display banner
@@ -168,7 +168,7 @@ chmod +x ${BOOTSTRAP_BIN}
 
 # PRoot
 echo "CernVM-Lite: Starting CernVM in userland"
-eval "${PARROT_BIN} ${PARROT_ARGS} $* ${BOOTSTRAP_BIN}"
+eval "${PARROT_BIN} ${PARROT_ARGS} $* /home/${USERNAME}/.bootstrap"
 
 # Remove directory upon exit
 echo "CernVM-Lite: Cleaning-up environment"
