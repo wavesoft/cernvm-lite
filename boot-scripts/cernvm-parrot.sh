@@ -70,11 +70,11 @@ EOF
 
 # Read-only mount from $1 to $2
 function MACRO_RO {
-	PARROT_ARGS="${PARROT_ARGS} -M '$1=/cvmfs/${CVMFS_REPOS}/cvm3/$1'"
+	PARROT_ARGS="${PARROT_ARGS} -M '/$1=/cvmfs/${CVMFS_REPOS}/cvm3/$1'"
 }
 # Create writable directory in $1
 function MACRO_RW {
-	PARROT_ARGS="${PARROT_ARGS} -M '$1=${GUESTRW_DIR}/$1'"
+	PARROT_ARGS="${PARROT_ARGS} -M '/$1=${GUESTRW_DIR}/$1'"
 	mkdir -p ${GUESTRW_DIR}/$1
 }
 # Create directoriy in $*
