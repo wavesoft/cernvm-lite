@@ -39,7 +39,11 @@ function setup_cvmfs {
 	mkdir -p ${CVMFS_CACHE}
 
 	# Setup default CVMFS proxy
-	CVMFS_PROXY="auto;DIRECT"
+	if [ -z "${CVMFS_HTTP_PROXY}" ]; then
+		CVMFS_PROXY="auto;DIRECT"
+	else
+		CVMFS_PROXY="${CVMFS_HTTP_PROXY}"
+	fi
 
 	# Setup CVMFS URL (expose CVMFS_SERVER, CVMFS_REPOS, CVMFS_URL)
 	CVMFS_SERVER="hepvm.cern.ch"

@@ -39,7 +39,11 @@ function setup_cvmfs {
 	mkdir -p ${CVMFS_CACHE}
 
 	# Setup default CVMFS proxy
-	CVMFS_PROXY="auto;DIRECT"
+	if [ -z "${CVMFS_HTTP_PROXY}" ]; then
+		CVMFS_PROXY="auto;DIRECT"
+	else
+		CVMFS_PROXY="${CVMFS_HTTP_PROXY}"
+	fi
 
 	# Setup CVMFS URL (expose CVMFS_SERVER, CVMFS_REPOS, CVMFS_URL)
 	CVMFS_SERVER="hepvm.cern.ch"
@@ -66,16 +70,16 @@ EOF
 
 # Read-only mount from $1 to $2
 function MACRO_RO {
-	BIND_ARGS="${BIND_ARGS} -b ${BASE_DIR}/$1:/$1"
-	mkdir -p ${GUEST_DIR}/$1
+	PARROT_ARGS="${PARROT_ARGS} -M '$1=/cvmfs/${CVMFS_REPOS}/cvm3/$1'"
 }
 # Create writable directory in $1
 function MACRO_RW {
-	mkdir -p ${GUEST_DIR}/$1
+	PARROT_ARGS="${PARROT_ARGS} -M '$1=${GUESTRW_DIR}/$1'"
+	mkdir -p ${GUESTRW_DIR}/$1
 }
 # Create directoriy in $*
 function MACRO_MKDIR {
-	mkdir -p ${GUEST_DIR}/$1
+	mkdir -p ${GUESTRW_DIR}/$1
 }
 # Expand archive with the tag id in $1
 function MACRO_EXPAND {
@@ -91,17 +95,10 @@ function MACRO_EXPAND {
 	fi
 
 	# Expand the files archive
-	tar -C ${GUEST_DIR} -jxf ${ARCHIVE_FILE}
+	tar -C ${GUESTRW_DIR} -jxf ${ARCHIVE_FILE}
 
 }
 ################################################
-
-# Reset Properties
-BASE_DIR=""
-GUEST_DIR=""
-
-# Parameters to be populated by the macros
-BIND_ARGS=""
 
 # Require a path to the boot script
 [ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && usage && exit 1
@@ -128,32 +125,28 @@ fi
 
 # Create a temporary destination directory
 TEMP_DIR=$(mktemp -d)
-GUEST_DIR="${TEMP_DIR}/root"
-CVMFS_RO_DIR="${TEMP_DIR}/ro"
-BASE_DIR="${CVMFS_RO_DIR}/cvm3"
+GUESTRW_DIR="${TEMP_DIR}/root" && mkdir ${GUESTRW_DIR}
+CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir ${CVMFS_DIR}
+PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 
-# Make directories
-mkdir ${TEMP_DIR}/{root,ro,cvmfs}
+# Setup origial parrot args
+PARROT_ARGS="${PARROT_ARGS} -t \"${PARROT_DIR}\""
 
-# Mount CVMFS repository in $BASE_DIR,
-# using the ${TEMP_DIR}/cvmfs as cache
-mount_cvmfs ${CVMFS_RO_DIR} "${TEMP_DIR}/cvmfs"
-
-# Get the latest update pack version
-CVMFS_VERSION=$(cat ${CVMFS_RO_DIR}/update-packs/cvm3/latest | grep version | awk -F'=' '{print $2}')
+# Setup CVMFS 
+setup_cvmfs ${CVMFS_RO_DIR}
+PARROT_ARGS="${PARROT_ARGS} --cvmfs-repos=\"${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}\""
 
 # Source boot script
 . ${BOOT_SCRIPT}
 
 # Prepare filesystem
 echo "CernVM-Lite: Preparing root filesystem"
-prepare_root ${GUEST_DIR}
+prepare_root ${GUESTRW_DIR}
 
 # PRoot
 echo "CernVM-Lite: Starting CernVM in userland v${CVMFS_VERSION}"
-${PARROT_BIN} ${BIND_ARGS} -R ${GUEST_DIR} -w / $*
+${PARROT_BIN} ${PARROT_ARGS} $*
 
 # Remove directory upon exit
 echo "CernVM-Lite: Cleaning-up environment"
-fusermount -u ${CVMFS_RO_DIR}
 rm -rf ${TEMP_DIR}
