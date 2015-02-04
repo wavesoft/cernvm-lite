@@ -134,7 +134,7 @@ CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir ${CVMFS_DIR}
 PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 
 # Setup origial parrot args
-PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
+PARROT_ARGS="${PARROT_ARGS} -f -t ${PARROT_DIR}"
 
 # Setup CVMFS 
 setup_cvmfs ${CVMFS_DIR}
