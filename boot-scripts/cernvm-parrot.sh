@@ -134,7 +134,7 @@ CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir ${CVMFS_DIR}
 PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 
 # Setup origial parrot args
-PARROT_ARGS="${PARROT_ARGS} -f -t ${PARROT_DIR}"
+PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
 
 # Setup CVMFS 
 setup_cvmfs ${CVMFS_DIR}
@@ -154,7 +154,7 @@ PARROT_ARGS="${PARROT_ARGS} -M '/home/${USERNAME}=${GUESTRW_DIR}/tmp/${USERNAME}
 
 # PRoot
 echo "CernVM-Lite: Starting CernVM in userland v${CVMFS_VERSION}"
-${PARROT_BIN} ${PARROT_ARGS} /bin/bash $*
+eval "${PARROT_BIN} ${PARROT_ARGS} /bin/bash $*"
 
 # Remove directory upon exit
 echo "CernVM-Lite: Cleaning-up environment"
