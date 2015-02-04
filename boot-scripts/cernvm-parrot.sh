@@ -33,6 +33,14 @@ function is_script_invalid {
 # Setup CVMFS configuration
 function setup_cvmfs {
 	local CONFIG_DIR=$1
+	local REPOS_NAME=$1
+
+	# Set default repository name
+	[ -z "$REPOS_NAME" ] && REPOS_NAME="cernvm-devel.cern.ch"
+
+	# Include repos in conf_dir
+	CONFIG_DIR="${CONFIG_DIR}/${REPOS_NAME}"
+	mkdir -p ${CONFIG_DIR}
 
 	# Setup cache (expose CVMFS_CACHE)
 	CVMFS_CACHE="${CONFIG_DIR}/cache"
@@ -47,7 +55,7 @@ function setup_cvmfs {
 
 	# Setup CVMFS URL (expose CVMFS_SERVER, CVMFS_REPOS, CVMFS_URL)
 	CVMFS_SERVER="hepvm.cern.ch"
-	CVMFS_REPOS="cernvm-devel.cern.ch"
+	CVMFS_REPOS="${REPOS_NAME}"
 	CVMFS_URL=http://${CVMFS_SERVER}/cvmfs/${CVMFS_REPOS}
 
 	# Setup CVMFS key (expose CMVFS_CONFIG)
@@ -141,7 +149,14 @@ PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
 
 # Setup CVMFS 
 setup_cvmfs ${CVMFS_DIR}
-PARROT_ARGS="${PARROT_ARGS} --cvmfs-repos='${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}'"
+PARROT_CVMFS_REPO="${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
+
+# Setup additional CVMFS directories
+REPOS=""
+for REPO in $REPOS; do
+	setup_cvmfs ${CVMFS_DIR} ${REPO}
+	PARROT_CVMFS_REPO="${PARROT_CVMFS_REPO} ${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
+done
 
 # Source boot script
 . ${BOOT_SCRIPT}
