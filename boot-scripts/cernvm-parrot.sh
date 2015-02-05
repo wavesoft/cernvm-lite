@@ -29,8 +29,8 @@ function usage {
 
 # Validate the boot script
 function is_script_invalid {
-	[ "$(cat $1 | head -n1 | tr -d '\n')" != "#!/bin/false" ] && return 0
-	[ "$(cat $1 | head -n1 | tail -n1 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 0
+	[ "$(cat $1 | head -n1 | tr -d '\n')" != '#!/bin/false' ] && return 0
+	[ "$(cat $1 | head -n1 | tail -n2 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 0
 	return 1
 }
 
