@@ -144,7 +144,7 @@ function setup_boot {
 #
 # Setup a CERN-Specific CVMFS repository
 #
-# Exports: CVMFS_PUB_KEY, CVMFS_CACHE, CVMFS_REPOS, CVMFS_URL, CVMFS_PROXY
+# Exports: CVMFS_PUB_KEY, CVMFS_REPOS, CVMFS_URL, CVMFS_PROXY
 #
 function setup_cvmfs_cern {
 	local CONFIG_DIR=$1
@@ -174,10 +174,6 @@ function setup_cvmfs_cern {
 
 	# [CVMFS_REPOS] : Repository name
 	CVMFS_REPOS="${REPOS_NAME}"
-
-	# [CVMFS_CACHE] : Cache directory
-	CVMFS_CACHE="${CONFIG_DIR}/${CVMFS_REPOS}-cache"
-	[ ! -d ${CVMFS_CACHE} ] && mkdir ${CVMFS_CACHE}
 
 	# [CVMFS_PROXY] : Proxy URLs
 	if [ -z "${CVMFS_HTTP_PROXY}" ]; then
@@ -287,7 +283,7 @@ BASE_DIR="/cvmfs/cernvm-devel.cern.ch/cvm3"
 # Create temporary working directory and internal structure
 TEMP_DIR=$(mktemp -d)
 GUESTRW_DIR="${TEMP_DIR}/root" && mkdir ${GUESTRW_DIR}
-CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir ${CVMFS_DIR}
+CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir ${CVMFS_DIR} && mkdir ${CVMFS_DIR}/cache
 PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 
 # Setup basic parrot args
@@ -295,13 +291,13 @@ PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
 
 # Setup CVMFS 
 setup_cvmfs_cern ${CVMFS_DIR} "cernvm-devel.cern.ch" || { echo "ERROR: Could not configure cernvm-devel.cern.ch CVMFS repository!"; cleanup; exit 1; }
-PARROT_CVMFS_REPO="${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
+PARROT_CVMFS_REPO="${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},mountpoint=/cvmfs/${CVMFS_REPOS}"
 
 # Setup additional CVMFS directories
 REPOS=""
 for REPO in ${CVMFS_REPO_LIST}; do
 	setup_cvmfs_cern ${CVMFS_DIR} ${REPO} || { echo "ERROR: Could not configure ${REPO} CVMFS repository!"; cleanup; exit 1; }
-	PARROT_CVMFS_REPO="${PARROT_CVMFS_REPO} ${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
+	PARROT_CVMFS_REPO="${PARROT_CVMFS_REPO} ${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},mountpoint=/cvmfs/${CVMFS_REPOS}"
 done
 
 # Source boot script
@@ -339,6 +335,7 @@ chmod +x ${BOOTSTRAP_BIN}
 # PRoot
 echo "CernVM-Lite: Starting CernVM in userland"
 export PARROT_CVMFS_REPO=${PARROT_CVMFS_REPO}
+export PARROT_CVMFS_CONFIG="cache_directory=${CVMFS_DIR}/cache"
 export PARROT_ALLOW_SWITCHING_CVMFS_REPOSITORIES=TRUE
 eval "${PARROT_BIN} ${PARROT_ARGS} -w /home/${USERNAME} $* /home/${USERNAME}/.bootstrap"
 
