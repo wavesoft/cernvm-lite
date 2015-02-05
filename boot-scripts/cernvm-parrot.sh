@@ -75,7 +75,7 @@ function setup_parrot {
 
 	# Make sure we have a cache directory
 	local CACHE_DIR="${HOME}/.cvmu/bin"
-	[ ! -d ${CACHE_DIR} ] && mkdir $CACHE_DIR
+	[ ! -d ${CACHE_DIR} ] && mkdir -p $CACHE_DIR
 
 	# Check if parrot is cached
 	X_PARROT_BIN=${CACHE_DIR}/parrot_run
@@ -124,7 +124,7 @@ function setup_boot {
 
 	# Make sure we have a cache directory
 	local CACHE_DIR="${HOME}/.cvmu/boot"
-	[ ! -d ${CACHE_DIR} ] && mkdir $CACHE_DIR
+	[ ! -d ${CACHE_DIR} ] && mkdir -p $CACHE_DIR
 
 	# Check if this boot script is already cached
 	BOOT_FILES=${CACHE_DIR}/files-${BOOT_NAME}.tbz2
