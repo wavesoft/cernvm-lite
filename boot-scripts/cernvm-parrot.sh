@@ -18,76 +18,174 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+# Script configuration
+CVMU_SERVER_URL="http://test4theory.cern.ch/cvmu"
+
 # Usage helper
 function usage {
-	echo "Usage: cernvm-parrot.sh <boot script>"
+	echo "CernVM in userland v0.1.0 - Ioannis Charalampidis PH/SFT"
+	echo "Usage: cvmu [-b <boot script>] [-c <cvmfs-repositroy>] <command> ..."
 }
 
 # Validate the boot script
 function is_script_invalid {
-	[ "$(cat $1 | head -n1 | tr -d '\n')" != "#!/bin/false" ] && return 1
-	[ "$(cat $1 | head -n1 | tail -n1 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 1
+	[ "$(cat $1 | head -n1 | tr -d '\n')" != "#!/bin/false" ] && return 0
+	[ "$(cat $1 | head -n1 | tail -n1 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 0
+	return 1
+}
+
+#
+# Detect environment and set the appropriate variables
+#
+# Exports: ENV_ARCH, ENV_DIST
+#
+function detect_env {
+	# Detect architecture
+	ENV_ARCH=$(uname -m)
+
+	# Detect distribution
+	ENV_DIST=""
+	if [ -f /etc/redhat-release ]; then
+		local RELEASE=$(cat /etc/redhat-release)
+		if [ $(echo "$RELEASE" | grep -c ' 6\.') -ne 0 ]; then
+			ENV_DIST="redhat6"
+		elif [ $(echo "$RELEASE" | grep -c ' 5\.') -ne 0 ]; then
+			ENV_DIST="redhat5"
+		fi
+	else
+		echo "ERROR: Unsupported linux distribution. We currently support RHEL5 and RHEL6 (or simmilar)."
+		return 1
+	fi
+}
+
+#
+# Fetch and install the appropriate parrot version
+#
+# Requires: ENV_ARCH, ENV_DIST, CVMU_SERVER_URL
+# Exports: PARROT_BIN
+#
+function setup_parrot {
+
+	# Check if we have parrot in environment
+	local X_PARROT_BIN=$(which parrot_run)
+	if [ ! -z "$X_PARROT_BIN" ]; then
+		PARROT_BIN=${X_PARROT_BIN}
+		return 0
+	fi
+
+	# Make sure we have a cache directory
+	local CACHE_DIR="${HOME}/.cvmu/bin"
+	[ ! -d ${CACHE_DIR} ] && mkdir $CACHE_DIR
+
+	# Check if parrot is cached
+	X_PARROT_BIN=${CACHE_DIR}/parrot_run
+	if [ -f ${X_PARROT_BIN} ]; then
+		PARROT_BIN=${X_PARROT_BIN}
+		return 0
+	fi
+
+	# Build the URL to use for fetching parrot
+	local PARROT_URL="${CVMU_SERVER_URL}/bin/parrot_run-${ENV_ARCH}-${ENV_DIST}.gz"
+
+	# Try to download to cache
+	curl -s -o "${X_PARROT_BIN}.gz" "${PARROT_URL}"
+	[ $? -ne 0 ] && echo "ERROR: Could not download parrot_run binary!" && return 1
+
+	# Uncompress parrot
+	gunzip "${X_PARROT_BIN}.gz"
+	[ $? -ne 0 ] && echo "ERROR: Could not decompress parrot_run binary!" && return 1
+
+	# Make sure it's executable
+	chmod +x ${X_PARROT_BIN}
+
+	# Export
+	PARROT_BIN=${X_PARROT_BIN}
+	return 0
+
+}
+
+#
+# Setup boot configuration files
+#
+# Requires: CVMU_SERVER_URL
+# Exports: BOOT_FILES, BOOT_CONFIG
+#
+function setup_boot {
+	local BOOT_NAME=$1
+
+	# Make sure we have a cache directory
+	local CACHE_DIR="${HOME}/.cvmu/boot"
+	[ ! -d ${CACHE_DIR} ] && mkdir $CACHE_DIR
+
+	# Check if this boot script is already cached
+	BOOT_FILES=${CACHE_DIR}/${BOOT_NAME}-files.tar.gz
+	BOOT_CONFIG=${CACHE_DIR}/${BOOT_NAME}.boot
+	[ -f ${BOOT_CONFIG} ] && return 0
+
+	# Otherwise download
+	curl -s -o "${BOOT_CONFIG}" "${CVMU_SERVER_URL}/boot/${BOOT_NAME}.boot"
+	[ $? -ne 0 ] && echo "ERROR: Could not download boot configuration!" && return 1
+	curl -s -o "${BOOT_FILES}" "${CVMU_SERVER_URL}/boot/${BOOT_NAME}-files.tar.gz"
+	[ $? -ne 0 ] && echo "ERROR: Could not download boot files!" && return 1
+
+	# We are good
 	return 0
 }
 
-# Setup CVMFS configuration
-function setup_cvmfs {
+#
+# Setup a CERN-Specific CVMFS repository
+#
+# Exports: CVMFS_PUB_KEY, CVMFS_CACHE, CVMFS_REPOS, CVMFS_URL, CVMFS_PROXY
+#
+function setup_cvmfs_cern {
 	local CONFIG_DIR=$1
-	local REPOS_NAME=$2
+	local REPOS_NAME=$1
 
-	# Set default repository name
-	if [ -z "$REPOS_NAME" ]; then
+	# This works *only* for .cern.ch
+	[ $(echo "$REPOS_NAME" | grep -c '.cern.ch$') ]
 
-		# Default repository is known
-		CVMFS_REPOS="cernvm-devel.cern.ch"
-		CVMFS_SERVER="hepvm.cern.ch"
-		CVMFS_URL=http://${CVMFS_SERVER}/cvmfs/${CVMFS_REPOS}
+	# Configurable parameters
+	local CFG_CVMFS_SERVER_URL="http://cvmfs-stratum-one.cern.ch/cvmfs/@fqrn@;http://cernvmfs.gridpp.rl.ac.uk/cvmfs/@fqrn@;http://cvmfs.racf.bnl.gov/cvmfs/@fqrn@;http://cvmfs.fnal.gov/cvmfs/@fqrn@;http://cvmfs02.grid.sinica.edu.tw/cvmfs/@fqrn@"
+	local CFG_CVMFS_PROXY="auto;DIRECT"
 
-	else
-
-		# Get the CERN repository
-		X_CHECK_URL=$(curl -s http://cvmfs-monitor.cern.ch/cvmfs-monitor/${REPOS_NAME}/ | awk '/"CERN"/{getline; print $3}' | tr -d '"')
-		[ -z "$X_CHECK_URL" ] && echo "ERROR: Could not find details for repository ${REPOS_NAME}" && exit 1
-
-		# Get the CERN repository
-		CVMFS_REPOS="${REPOS_NAME}"
-		CVMFS_URL=$(curl -s http://cvmfs-monitor.cern.ch${X_CHECK_URL} | grep "url" | awk '{print $3}' | sed -r 's/"(.*)".*/\1/')
-		[ -z "$CVMFS_URL" ] && echo "ERROR: Could not find URL for repository ${REPOS_NAME}" && exit 1
-
+	# [CVMFS_PUB_KEY] : CERN Public Key
+	CVMFS_PUB_KEY=${CONFIG_DIR}/cern.ch.pub
+	if [ ! -f ${CVMFS_PUB_KEY} ]; then
+		echo "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUEyc2I4U25WVklCZVlrN2YyYmhtbgp1b2laN1dqZ0taOTBERVY1T0picXJWVXNuNlMrSkpSRSs1dThPY0xZMHdyY3BkcE5yazlZc3NTZVRmMzA1bk83CkloS1J3VG9pYzNuL0l0RW93MUluYzZQZG44aFFJZVFIYno4cjdHZUN3dktuU0dvSmYvVTQvSmh0ZG54THpZeGUKN3h2VUw4dG1wVUM5QjRxZTM0aFhhRmxVYnpxZHVldjJobmRGbkt4MmNNeVdKbkVWVWtTNzVPQXlNNkFzRFRyeApIV3prZlg3TmFjcUZONndnd3RZK0dhOU5WMHhBT2p6RHdtY2xDMnV4RC9iZmdhOGo2ZDBjUU9zWnIwTDF0RUhRCnFTdzV6YWVRaWpPeDhZYVpDN3llUDdyS2NGTHkxUEkrK0psV1RibkN0NnFrZm1LTGpTQmwwd2pycUxIZ29nUW4KUndJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==" | base64 -d > ${CVMFS_PUB_KEY}
 	fi
 
-	# Include repos in conf_dir
-	CONFIG_DIR="${CONFIG_DIR}/${CVMFS_REPOS}"
-	mkdir -p ${CONFIG_DIR}
+	# [CVMFS_REPOS] : Repository name
+	CVMFS_REPOS="${REPOS_NAME}"
 
-	# Setup cache (expose CVMFS_CACHE)
-	CVMFS_CACHE="${CONFIG_DIR}/cache"
-	mkdir -p ${CVMFS_CACHE}
+	# [CVMFS_CACHE] : Cache directory
+	CVMFS_CACHE="${CONFIG_DIR}/${CVMFS_REPOS}-cache"
+	[ ! -d ${CVMFS_CACHE} ] && mkdir ${CVMFS_CACHE}
 
-	# Setup default CVMFS proxy
+	# [CVMFS_PROXY] : Proxy URLs
 	if [ -z "${CVMFS_HTTP_PROXY}" ]; then
-		CVMFS_PROXY="auto;DIRECT"
+		CVMFS_PROXY=${CFG_CVMFS_PROXY}
 	else
 		CVMFS_PROXY="${CVMFS_HTTP_PROXY}"
 	fi
 
-	# Setup CVMFS key (expose CMVFS_CONFIG)
-	CVMFS_KEYS="${CONFIG_DIR}/keys"
-	CVMFS_PUB_KEY="${CVMFS_KEYS}/${CVMFS_REPOS}.pub"
-	mkdir -p ${CVMFS_KEYS}
-	cat <<EOF > ${CVMFS_PUB_KEY}
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA2sb8SnVVIBeYk7f2bhmn
-uoiZ7WjgKZ90DEV5OJbqrVUsn6S+JJRE+5u8OcLY0wrcpdpNrk9YssSeTf305nO7
-IhKRwToic3n/ItEow1Inc6Pdn8hQIeQHbz8r7GeCwvKnSGoJf/U4/JhtdnxLzYxe
-7xvUL8tmpUC9B4qe34hXaFlUbzqduev2hndFnKx2cMyWJnEVUkS75OAyM6AsDTrx
-HWzkfX7NacqFN6wgwtY+Ga9NV0xAOjzDwmclC2uxD/bfga8j6d0cQOsZr0L1tEHQ
-qSw5zaeQijOx8YaZC7yeP7rKcFLy1PI++JlWTbnCt6qkfmKLjSBl0wjrqLHgogQn
-RwIDAQAB
------END PUBLIC KEY-----
-EOF
+	# [CVMFS_URL] : Server URL
+	CVMFS_URL=$(echo "$CFG_CVMFS_SERVER_URL" | sed "s/@fqrn@/${CVMFS_REPOS}/g")
 
 }
+
+#
+# Cleanup temporary directory
+#
+function cleanup {
+	# Cleanup temp dir if specified
+	[ ! -z "$TEMP_DIR" ] && rm -rf "$TEMP_DIR"
+	# Return always 0
+	return 0
+}
+
+# ----------------------------------------------
+# Boot script macro implementation
+# ----------------------------------------------
 
 # Read-only mount from $1 to $2
 function MACRO_RO {
@@ -123,35 +221,52 @@ function MACRO_EXPAND {
 	tar -C ${GUESTRW_DIR} -jxf ${ARCHIVE_FILE}
 
 }
+
 ################################################
+
+# Get options from command-line
+options=$(getopt -o hc:b: -l cvmfs:,boot: -- "$@")
+if [ $? -ne 0 ]; then
+	usage
+	exit 1
+fi
+eval set -- "$options"
+
+# Default options
+BOOT_CONFIG=""
+CVMFS_REPOS=""
+
+# Process options
+while true
+do
+	case "$1" in
+		-h|--help)          usage && exit 0;;
+		-b|--boot)          BOOT_CONFIG="$2"; shift 2;;
+		-c|--cvmfs)         CVMFS_REPOS="${CVMFS_REPOS} $2"; shift 2;;
+		--)                 shift 1; break ;;
+		*)                  break ;;
+	esac
+done
+
+# Detect environment
+detect_env || exit 1
+
+# Download boot script if not specified
+if [ -z "$BOOT_CONFIG" ]; then
+	echo "INFO: Downloading latest CVMU boot specifications"
+	setup_boot "latest" || exit 1
+fi
+
+# Validate boot script
+is_script_invalid ${BOOT_CONFIG} && echo "ERROR: Invalid boot specifications found!" && exit 1
+
+# Download/obtain parrot_run utility
+setup_parrot || echo "ERROR: Could not find/download parrot_run utility!" && exit 1
 
 # Base directory (inside parrot environment)
 BASE_DIR="/cvmfs/cernvm-devel.cern.ch/cvm3"
 
-# Require a path to the boot script
-[ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && usage && exit 1
-BOOT_SCRIPT=$1
-shift
-
-# Validate boot script
-is_script_invalid ${BOOT_SCRIPT} && echo "ERROR: This is not a valid boot script!" && exit 2
-
-# Check if we have proot utility, otherwise download it
-PARROT_BIN=$(which parrot_run 2>/dev/null)
-if [ -z "${PARROT_BIN}" ]; then
-	# We need to simplify this...
-	PARROT_BIN="./cctools-4.3.2-x86_64-redhat6/bin/parrot_run"
-	if [ ! -f "${PARROT_BIN}" ]; then
-		echo -n "CernVM-Lite: Downloading CCTools..."
-		wget -q http://ccl.cse.nd.edu/software/files/cctools-4.3.2-x86_64-redhat6.tar.gz
-		[ $? -ne 0 ] && echo "error" && rm cctools-4.3.2-x86_64-redhat6.tar.gz && exit 1
-		tar -zxf cctools-4.3.2-x86_64-redhat6.tar.gz
-		[ $? -ne 0 ] && echo "error" && rm cctools-4.3.2-x86_64-redhat6.tar.gz && exit 1
-		echo "ok"
-	fi
-fi
-
-# Create a temporary working directory
+# Create temporary working directory and internal structure
 TEMP_DIR=$(mktemp -d)
 GUESTRW_DIR="${TEMP_DIR}/root" && mkdir ${GUESTRW_DIR}
 CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir ${CVMFS_DIR}
@@ -161,14 +276,13 @@ PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
 
 # Setup CVMFS 
-setup_cvmfs ${CVMFS_DIR}
+setup_cvmfs_cern ${CVMFS_DIR} cernvm-devel.cern.ch || echo "ERROR: Could not configure cernvm-devel.cern.ch CVMFS repository!" && cleanup && exit 1
 PARROT_CVMFS_REPO="${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
 
 # Setup additional CVMFS directories
-# (Not (yet?) fully supported by parrot)
 REPOS=""
-for REPO in $REPOS; do
-	setup_cvmfs ${CVMFS_DIR} ${REPO}
+for REPO in $CVMFS_REPOS; do
+	setup_cvmfs_cern ${CVMFS_DIR} ${REPO} || echo "ERROR: Could not configure ${REPO} CVMFS repository!" && cleanup && exit 1
 	PARROT_CVMFS_REPO="${PARROT_CVMFS_REPO} ${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
 done
 
