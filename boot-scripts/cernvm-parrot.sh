@@ -124,9 +124,9 @@ function setup_boot {
 
 	# Otherwise download
 	curl -s -o "${BOOT_CONFIG}" "${CVMU_SERVER_URL}/boot/${BOOT_NAME}.boot"
-	[ $? -ne 0 ] && echo "ERROR: Could not download boot configuration!" && return 1
+	[ $? -ne 0 ] && echo "ERROR: Could not download boot configuration!" && rm ${BOOT_CONFIG} return 1
 	curl -s -o "${BOOT_FILES}" "${CVMU_SERVER_URL}/boot/files-${BOOT_NAME}.tbz2"
-	[ $? -ne 0 ] && echo "ERROR: Could not download boot files!" && return 1
+	[ $? -ne 0 ] && echo "ERROR: Could not download boot files!" && rm ${BOOT_CONFIG} && rm ${BOOT_FILES} && return 1
 
 	# We are good
 	return 0
