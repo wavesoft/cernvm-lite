@@ -239,7 +239,7 @@ function MACRO_EXPAND {
 ################################################
 
 # Get options from command-line
-options=$(getopt -o hc:b: -l cvmfs:,boot: -- "$@")
+options=$(getopt -o hc:b: -l help,cvmfs:,boot: -- "$@")
 if [ $? -ne 0 ]; then
 	usage
 	exit 1
