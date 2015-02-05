@@ -243,7 +243,7 @@ eval set -- "$options"
 
 # Default options
 BOOT_CONFIG=""
-CVMFS_REPOS=""
+CVMFS_REPO_LIST=""
 
 # Process options
 while true
@@ -251,7 +251,7 @@ do
 	case "$1" in
 		-h|--help)          usage && exit 0;;
 		-b|--boot)          BOOT_CONFIG="$2"; shift 2;;
-		-c|--cvmfs)         CVMFS_REPOS="${CVMFS_REPOS} $2"; shift 2;;
+		-c|--cvmfs)         CVMFS_REPO_LIST="${CVMFS_REPO_LIST} $2"; shift 2;;
 		--)                 shift 1; break ;;
 		*)                  break ;;
 	esac
@@ -285,12 +285,12 @@ PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
 
 # Setup CVMFS 
-setup_cvmfs_cern ${CVMFS_DIR} cernvm-devel.cern.ch || { echo "ERROR: Could not configure cernvm-devel.cern.ch CVMFS repository!"; cleanup; exit 1; }
+setup_cvmfs_cern ${CVMFS_DIR} "cernvm-devel.cern.ch" || { echo "ERROR: Could not configure cernvm-devel.cern.ch CVMFS repository!"; cleanup; exit 1; }
 PARROT_CVMFS_REPO="${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
 
 # Setup additional CVMFS directories
 REPOS=""
-for REPO in $CVMFS_REPOS; do
+for REPO in ${CVMFS_REPO_LIST}; do
 	setup_cvmfs_cern ${CVMFS_DIR} ${REPO} || { echo "ERROR: Could not configure ${REPO} CVMFS repository!"; cleanup; exit 1; }
 	PARROT_CVMFS_REPO="${PARROT_CVMFS_REPO} ${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
 done
