@@ -258,7 +258,7 @@ do
 	case "$1" in
 		-h|--help)          usage && exit 0;;
 		-b|--boot)          BOOT_CONFIG="$2"; shift 2;;
-		-n|--name)			CONTAINER_NAME="$2"; shift2;;
+		-n|--name)			CONTAINER_NAME="$2"; shift 2;;
 		-c|--cvmfs)         CVMFS_REPO_LIST="${CVMFS_REPO_LIST} $2"; shift 2;;
 		--)                 shift 1; break ;;
 		*)                  break ;;
