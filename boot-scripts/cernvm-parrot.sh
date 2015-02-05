@@ -207,6 +207,7 @@ function MACRO_RO {
 }
 # Create writable directory in $1
 function MACRO_RW {
+	[ "$1" == "tmp" ] && return
 	PARROT_ARGS="${PARROT_ARGS} -M '/$1=${GUESTRW_DIR}/$1'"
 	mkdir -p ${GUESTRW_DIR}/$1
 }
@@ -306,6 +307,10 @@ done
 # Prepare filesystem
 echo "CernVM-Lite: Preparing root filesystem"
 prepare_root ${GUESTRW_DIR}
+
+# Overwrite the /tmp folder AFTER everything else
+PARROT_ARGS="${PARROT_ARGS} -M '/tmp=${GUESTRW_DIR}/tmp'"
+mkdir -p ${GUESTRW_DIR}/tmp
 
 # Create a home directory for the user
 USERNAME=$(whoami)
