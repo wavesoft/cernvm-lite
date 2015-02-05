@@ -118,14 +118,14 @@ function setup_boot {
 	[ ! -d ${CACHE_DIR} ] && mkdir $CACHE_DIR
 
 	# Check if this boot script is already cached
-	BOOT_FILES=${CACHE_DIR}/${BOOT_NAME}-files.tar.gz
+	BOOT_FILES=${CACHE_DIR}/files-${BOOT_NAME}.tbz2
 	BOOT_CONFIG=${CACHE_DIR}/${BOOT_NAME}.boot
 	[ -f ${BOOT_CONFIG} ] && return 0
 
 	# Otherwise download
 	curl -s -o "${BOOT_CONFIG}" "${CVMU_SERVER_URL}/boot/${BOOT_NAME}.boot"
 	[ $? -ne 0 ] && echo "ERROR: Could not download boot configuration!" && return 1
-	curl -s -o "${BOOT_FILES}" "${CVMU_SERVER_URL}/boot/${BOOT_NAME}-files.tar.gz"
+	curl -s -o "${BOOT_FILES}" "${CVMU_SERVER_URL}/boot/files-${BOOT_NAME}.tbz2"
 	[ $? -ne 0 ] && echo "ERROR: Could not download boot files!" && return 1
 
 	# We are good
