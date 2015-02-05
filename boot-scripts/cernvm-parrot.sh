@@ -150,18 +150,27 @@ function setup_cvmfs_cern {
 	local CONFIG_DIR=$1
 	local REPOS_NAME=$2
 
-	# This works *only* for .cern.ch
-	[ $(echo "$REPOS_NAME" | grep -c '.cern.ch$') ]
+	# [CVMFS_PUB_KEY] : CERN Public Key
+	# If we use cernvm-devel,cern.ch, use devel pub key
+	if [ "$REPOS_NAME" == "cernvm-devel.cern.ch" ]; then
+		CVMFS_PUB_KEY=${CONFIG_DIR}/cernvm-devel.cern.ch.pub
+		if [ ! -f ${CVMFS_PUB_KEY} ]; then
+			echo "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF1a0J1c21ZeUZXOEtKeFZNbWVDagpON3ZjVTFtRVJNcERoUFRhNVBnRlJPU1ZpaXdiVXNidHBQOUN2ZnhCL0tVMWdnZ2RidFdPVFpWVFFxQTNiK3A4Cmc1VnZlMy9yZG5ONVpFcXV4ZUVmSUc2aUVadGE5WmVpNW1aTWV1SytEUGR5anR2TjF3UDA5ODJwcGJaektSQnUKQmJ6UjRZZHJ3d1dYWE5aSDY1elp1VUlTREpCNG15NFhSb1ZjbHJONWFHVno0UGptSVpGbE9KK3l0S3NNbGVnVwpTTkR3Wk85ei9ZdEJGaWwvQ2E4RkpoUlBGTUtkdnhLK2V6Z3ErT1FXQWVyVk5YN2ZBck1DKzRZYTVwRjNBU3I2CjNtbHZJc0JwZWpDVUJ5Z1Y0TjJweEljUEp1L1pEYWlrbVZ2ZFBUTk9UWmxJRk1mNHpJUC9ZSGVnUVNKbU95VnAKSFFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==" | base64 -d > ${CVMFS_PUB_KEY}
+		fi
+	# If we use .cern.ch repository, use the cern pub key
+	elif [ $(echo "$REPOS_NAME" | grep -c '.cern.ch$') -ne 0 ]; then
+		CVMFS_PUB_KEY=${CONFIG_DIR}/cern.ch.pub
+		if [ ! -f ${CVMFS_PUB_KEY} ]; then
+			echo "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUEyc2I4U25WVklCZVlrN2YyYmhtbgp1b2laN1dqZ0taOTBERVY1T0picXJWVXNuNlMrSkpSRSs1dThPY0xZMHdyY3BkcE5yazlZc3NTZVRmMzA1bk83CkloS1J3VG9pYzNuL0l0RW93MUluYzZQZG44aFFJZVFIYno4cjdHZUN3dktuU0dvSmYvVTQvSmh0ZG54THpZeGUKN3h2VUw4dG1wVUM5QjRxZTM0aFhhRmxVYnpxZHVldjJobmRGbkt4MmNNeVdKbkVWVWtTNzVPQXlNNkFzRFRyeApIV3prZlg3TmFjcUZONndnd3RZK0dhOU5WMHhBT2p6RHdtY2xDMnV4RC9iZmdhOGo2ZDBjUU9zWnIwTDF0RUhRCnFTdzV6YWVRaWpPeDhZYVpDN3llUDdyS2NGTHkxUEkrK0psV1RibkN0NnFrZm1LTGpTQmwwd2pycUxIZ29nUW4KUndJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==" | base64 -d > ${CVMFS_PUB_KEY}
+		fi
+	else
+		echo "ERROR: I don't know the pulic key of repository ${REPOS_NAME}!"
+		return 1
+	fi
 
 	# Configurable parameters
 	local CFG_CVMFS_SERVER_URL="http://hepvm.cern.ch/cvmfs/@fqrn@;http://cvmfs-stratum-one.cern.ch/cvmfs/@fqrn@;http://cernvmfs.gridpp.rl.ac.uk/cvmfs/@fqrn@;http://cvmfs.racf.bnl.gov/cvmfs/@fqrn@;http://cvmfs.fnal.gov/cvmfs/@fqrn@;http://cvmfs02.grid.sinica.edu.tw/cvmfs/@fqrn@"
 	local CFG_CVMFS_PROXY="auto;DIRECT"
-
-	# [CVMFS_PUB_KEY] : CERN Public Key
-	CVMFS_PUB_KEY=${CONFIG_DIR}/cern.ch.pub
-	if [ ! -f ${CVMFS_PUB_KEY} ]; then
-		echo "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUEyc2I4U25WVklCZVlrN2YyYmhtbgp1b2laN1dqZ0taOTBERVY1T0picXJWVXNuNlMrSkpSRSs1dThPY0xZMHdyY3BkcE5yazlZc3NTZVRmMzA1bk83CkloS1J3VG9pYzNuL0l0RW93MUluYzZQZG44aFFJZVFIYno4cjdHZUN3dktuU0dvSmYvVTQvSmh0ZG54THpZeGUKN3h2VUw4dG1wVUM5QjRxZTM0aFhhRmxVYnpxZHVldjJobmRGbkt4MmNNeVdKbkVWVWtTNzVPQXlNNkFzRFRyeApIV3prZlg3TmFjcUZONndnd3RZK0dhOU5WMHhBT2p6RHdtY2xDMnV4RC9iZmdhOGo2ZDBjUU9zWnIwTDF0RUhRCnFTdzV6YWVRaWpPeDhZYVpDN3llUDdyS2NGTHkxUEkrK0psV1RibkN0NnFrZm1LTGpTQmwwd2pycUxIZ29nUW4KUndJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0tCg==" | base64 -d > ${CVMFS_PUB_KEY}
-	fi
 
 	# [CVMFS_REPOS] : Repository name
 	CVMFS_REPOS="${REPOS_NAME}"
