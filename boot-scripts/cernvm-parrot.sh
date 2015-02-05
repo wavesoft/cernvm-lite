@@ -30,7 +30,7 @@ function usage {
 # Validate the boot script
 function is_script_invalid {
 	[ "$(cat $1 | head -n1 | tr -d '\n')" != '#!/bin/false' ] && return 0
-	[ "$(cat $1 | head -n1 | tail -n2 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 0
+	[ "$(cat $1 | head -n2 | tail -n1 | tr -d '\n')" != "#BOOT_CONFIG=1.0" ] && return 0
 	return 1
 }
 
@@ -67,7 +67,7 @@ function detect_env {
 function setup_parrot {
 
 	# Check if we have parrot in environment
-	local X_PARROT_BIN=$(which parrot_run)
+	local X_PARROT_BIN=$(which parrot_run 2>/dev/null)
 	if [ ! -z "$X_PARROT_BIN" ]; then
 		PARROT_BIN=${X_PARROT_BIN}
 		return 0
@@ -88,12 +88,21 @@ function setup_parrot {
 	local PARROT_URL="${CVMU_SERVER_URL}/bin/parrot_run-${ENV_ARCH}-${ENV_DIST}.gz"
 
 	# Try to download to cache
+	echo "INFO: Downloading required software"
 	curl -s -o "${X_PARROT_BIN}.gz" "${PARROT_URL}"
-	[ $? -ne 0 ] && echo "ERROR: Could not download parrot_run binary!" && return 1
+	if [ $? -ne 0 ]; then
+		echo "ERROR: Could not download parrot_run binary!"
+		rm "${X_PARROT_BIN}.gz"
+		return 1
+	fi
 
 	# Uncompress parrot
 	gunzip "${X_PARROT_BIN}.gz"
-	[ $? -ne 0 ] && echo "ERROR: Could not decompress parrot_run binary!" && return 1
+	if [ $? -ne 0 ]; then
+		echo "ERROR: Could not decompress parrot_run binary!"
+		rm "${X_PARROT_BIN}*" 
+		return 1
+	fi
 
 	# Make sure it's executable
 	chmod +x ${X_PARROT_BIN}
@@ -258,10 +267,10 @@ if [ -z "$BOOT_CONFIG" ]; then
 fi
 
 # Validate boot script
-is_script_invalid ${BOOT_CONFIG} && echo "ERROR: Invalid boot specifications found!" && exit 1
+is_script_invalid ${BOOT_CONFIG} && { echo "ERROR: Invalid boot specifications found!"; exit 1 }
 
 # Download/obtain parrot_run utility
-setup_parrot || echo "ERROR: Could not find/download parrot_run utility!" && exit 1
+setup_parrot || { echo "ERROR: Could not find/download parrot_run utility!"; exit 1 }
 
 # Base directory (inside parrot environment)
 BASE_DIR="/cvmfs/cernvm-devel.cern.ch/cvm3"
@@ -276,13 +285,13 @@ PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
 
 # Setup CVMFS 
-setup_cvmfs_cern ${CVMFS_DIR} cernvm-devel.cern.ch || echo "ERROR: Could not configure cernvm-devel.cern.ch CVMFS repository!" && cleanup && exit 1
+setup_cvmfs_cern ${CVMFS_DIR} cernvm-devel.cern.ch || { echo "ERROR: Could not configure cernvm-devel.cern.ch CVMFS repository!"; cleanup; exit 1 }
 PARROT_CVMFS_REPO="${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
 
 # Setup additional CVMFS directories
 REPOS=""
 for REPO in $CVMFS_REPOS; do
-	setup_cvmfs_cern ${CVMFS_DIR} ${REPO} || echo "ERROR: Could not configure ${REPO} CVMFS repository!" && cleanup && exit 1
+	setup_cvmfs_cern ${CVMFS_DIR} ${REPO} || { echo "ERROR: Could not configure ${REPO} CVMFS repository!"; cleanup; exit 1 }
 	PARROT_CVMFS_REPO="${PARROT_CVMFS_REPO} ${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
 done
 
