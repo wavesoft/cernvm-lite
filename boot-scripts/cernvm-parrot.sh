@@ -327,7 +327,7 @@ echo "CernVM-Lite: Welcome to CernVM v\${CVMFS_VERSION}"
 # Prepare environment
 export HOME=/home/${USERNAME}
 export TMPDIR=/tmp
-export PS1="[UCVM][\u@\h \W]\$ "
+export PS1="<\[\e[1;32m\]cvmu\[\e[0m\]>[\u@\h \W]\$ "
 
 /bin/bash
 EOF
