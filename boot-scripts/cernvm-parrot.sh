@@ -355,5 +355,9 @@ export PARROT_ALLOW_SWITCHING_CVMFS_REPOSITORIES=TRUE
 eval "${PARROT_BIN} ${PARROT_ARGS} -w /home/${USERNAME} $* /home/${USERNAME}/.bootstrap"
 
 # Remove directory upon exit
-echo "CernVM-Lite: Cleaning-up environment"
-rm -rf ${TEMP_DIR}
+if [ ! -z "$CONTAINER_NAME" ]; then
+	echo "CernVM-Lite: Container state '${CONTAINER_NAME}' saved"
+else
+	echo "CernVM-Lite: Cleaning-up environment"
+	rm -rf ${TEMP_DIR}
+fi
