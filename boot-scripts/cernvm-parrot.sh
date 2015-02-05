@@ -326,6 +326,7 @@ chmod +x ${BOOTSTRAP_BIN}
 # PRoot
 echo "CernVM-Lite: Starting CernVM in userland"
 export PARROT_CVMFS_REPO=${PARROT_CVMFS_REPO}
+export PARROT_ALLOW_SWITCHING_CVMFS_REPOSITORIES=TRUE
 eval "${PARROT_BIN} ${PARROT_ARGS} -w /home/${USERNAME} $* /home/${USERNAME}/.bootstrap"
 
 # Remove directory upon exit
