@@ -88,7 +88,7 @@ function setup_parrot {
 	local PARROT_URL="${CVMU_SERVER_URL}/bin/parrot_run-${ENV_ARCH}-${ENV_DIST}.gz"
 
 	# Try to download to cache
-	echo "INFO: Downloading required software"
+	echo "CernVM-Lite: Downloading required software"
 	curl -s -o "${X_PARROT_BIN}.gz" "${PARROT_URL}"
 	if [ $? -ne 0 ]; then
 		echo "ERROR: Could not download parrot_run binary!"
@@ -262,7 +262,7 @@ detect_env || exit 1
 
 # Download boot script if not specified
 if [ -z "$BOOT_CONFIG" ]; then
-	echo "INFO: Downloading latest CVMU boot specifications"
+	echo "CernVM-Lite: Downloading latest CVMU boot specifications"
 	setup_boot "latest" || exit 1
 fi
 
