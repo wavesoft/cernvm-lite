@@ -148,7 +148,7 @@ function setup_boot {
 #
 function setup_cvmfs_cern {
 	local CONFIG_DIR=$1
-	local REPOS_NAME=$1
+	local REPOS_NAME=$2
 
 	# This works *only* for .cern.ch
 	[ $(echo "$REPOS_NAME" | grep -c '.cern.ch$') ]
@@ -221,9 +221,9 @@ function MACRO_EXPAND {
 
 	# Override with files archive that exist in the
 	# same directory as the boot script
-	BOOT_SCRIPT_DIR=$(dirname ${BOOT_SCRIPT})
-	if [ -f "${BOOT_SCRIPT_DIR}/files-$1.tbz2" ]; then
-		ARCHIVE_FILE="${BOOT_SCRIPT_DIR}/files-$1.tbz2"
+	BOOT_CONFIG_DIR=$(dirname ${BOOT_CONFIG})
+	if [ -f "${BOOT_CONFIG_DIR}/files-$1.tbz2" ]; then
+		ARCHIVE_FILE="${BOOT_CONFIG_DIR}/files-$1.tbz2"
 	fi
 
 	# Expand the files archive
@@ -267,10 +267,10 @@ if [ -z "$BOOT_CONFIG" ]; then
 fi
 
 # Validate boot script
-is_script_invalid ${BOOT_CONFIG} && { echo "ERROR: Invalid boot specifications found!"; exit 1 }
+is_script_invalid ${BOOT_CONFIG} && { echo "ERROR: Invalid boot specifications found!"; exit 1; }
 
 # Download/obtain parrot_run utility
-setup_parrot || { echo "ERROR: Could not find/download parrot_run utility!"; exit 1 }
+setup_parrot || { echo "ERROR: Could not find/download parrot_run utility!"; exit 1; }
 
 # Base directory (inside parrot environment)
 BASE_DIR="/cvmfs/cernvm-devel.cern.ch/cvm3"
@@ -285,18 +285,18 @@ PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
 PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
 
 # Setup CVMFS 
-setup_cvmfs_cern ${CVMFS_DIR} cernvm-devel.cern.ch || { echo "ERROR: Could not configure cernvm-devel.cern.ch CVMFS repository!"; cleanup; exit 1 }
+setup_cvmfs_cern ${CVMFS_DIR} cernvm-devel.cern.ch || { echo "ERROR: Could not configure cernvm-devel.cern.ch CVMFS repository!"; cleanup; exit 1; }
 PARROT_CVMFS_REPO="${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
 
 # Setup additional CVMFS directories
 REPOS=""
 for REPO in $CVMFS_REPOS; do
-	setup_cvmfs_cern ${CVMFS_DIR} ${REPO} || { echo "ERROR: Could not configure ${REPO} CVMFS repository!"; cleanup; exit 1 }
+	setup_cvmfs_cern ${CVMFS_DIR} ${REPO} || { echo "ERROR: Could not configure ${REPO} CVMFS repository!"; cleanup; exit 1; }
 	PARROT_CVMFS_REPO="${PARROT_CVMFS_REPO} ${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},cachedir=${CVMFS_CACHE},mountpoint=/cvmfs/${CVMFS_REPOS}"
 done
 
 # Source boot script
-. ${BOOT_SCRIPT}
+. ${BOOT_CONFIG}
 
 # Prepare filesystem
 echo "CernVM-Lite: Preparing root filesystem"
