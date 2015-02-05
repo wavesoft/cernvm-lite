@@ -24,7 +24,7 @@ CVMU_SERVER_URL="http://test4theory.cern.ch/cvmu"
 # Usage helper
 function usage {
 	echo "CernVM in userland v0.1.0 - Ioannis Charalampidis PH/SFT"
-	echo "Usage: cvmu [-b <boot script>] [-c <cvmfs-repositroy>] <command> ..."
+	echo "Usage: cvmu [-n <name>] [-b <boot script>] [-c <cvmfs-repositroy>] <command> ..."
 }
 
 # Validate the boot script
@@ -151,7 +151,7 @@ function setup_cvmfs_cern {
 	local REPOS_NAME=$2
 
 	# [CVMFS_PUB_KEY] : CERN Public Key
-	# If we use cernvm-devel,cern.ch, use devel pub key
+	# If we use cernvm-devel.cern.ch, use devel pub key
 	if [ "$REPOS_NAME" == "cernvm-devel.cern.ch" ]; then
 		CVMFS_PUB_KEY=${CONFIG_DIR}/cernvm-devel.cern.ch.pub
 		if [ ! -f ${CVMFS_PUB_KEY} ]; then
@@ -240,7 +240,7 @@ function MACRO_EXPAND {
 ################################################
 
 # Get options from command-line
-options=$(getopt -o hc:b: -l help,cvmfs:,boot: -- "$@")
+options=$(getopt -o hc:b:n: -l help,cvmfs:,boot:,name: -- "$@")
 if [ $? -ne 0 ]; then
 	usage
 	exit 1
@@ -250,6 +250,7 @@ eval set -- "$options"
 # Default options
 BOOT_CONFIG=""
 CVMFS_REPO_LIST=""
+CONTAINER_NAME=""
 
 # Process options
 while true
@@ -257,6 +258,7 @@ do
 	case "$1" in
 		-h|--help)          usage && exit 0;;
 		-b|--boot)          BOOT_CONFIG="$2"; shift 2;;
+		-n|--name)			CONTAINER_NAME="$2"; shift2;;
 		-c|--cvmfs)         CVMFS_REPO_LIST="${CVMFS_REPO_LIST} $2"; shift 2;;
 		--)                 shift 1; break ;;
 		*)                  break ;;
@@ -281,11 +283,19 @@ setup_parrot || { echo "ERROR: Could not find/download parrot_run utility!"; exi
 # Base directory (inside parrot environment)
 BASE_DIR="/cvmfs/cernvm-devel.cern.ch/cvm3"
 
+# Create temporary directory or resume/create new one
+if [ ! -z "$CONTAINER_NAME" ]; then
+	# Create a resumable (permanent) cache in the user's home folder
+	TEMP_DIR="${HOME}/.cvmu/cache/${CONTAINER_NAME}"
+	[ ! -d ${TEMP_DIR} ] && mkdir -p $TEMP_DIR
+else
+	TEMP_DIR=$(mktemp -d)
+fi
+
 # Create temporary working directory and internal structure
-TEMP_DIR=$(mktemp -d)
-GUESTRW_DIR="${TEMP_DIR}/root" && mkdir ${GUESTRW_DIR}
-CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir ${CVMFS_DIR} && mkdir ${CVMFS_DIR}/cache
-PARROT_DIR="${TEMP_DIR}/parrot" && mkdir ${PARROT_DIR}
+GUESTRW_DIR="${TEMP_DIR}/root" && mkdir -p ${GUESTRW_DIR}
+CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir -p ${CVMFS_DIR} && mkdir -p ${CVMFS_DIR}/cache
+PARROT_DIR="${TEMP_DIR}/parrot" && mkdir -p ${PARROT_DIR}
 
 # Setup basic parrot args
 PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
