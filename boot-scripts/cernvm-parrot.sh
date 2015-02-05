@@ -329,6 +329,9 @@ export HOME=/home/${USERNAME}
 export TMPDIR=/tmp
 export PS1="<\[\e[1;32m\]cvmu\[\e[0m\]>[\u@\h \W]\$ "
 
+# Enable ls colors
+alias ls='ls --color=auto'
+
 /bin/bash
 EOF
 chmod +x ${BOOTSTRAP_BIN}
