@@ -154,7 +154,7 @@ function setup_cvmfs_cern {
 	[ $(echo "$REPOS_NAME" | grep -c '.cern.ch$') ]
 
 	# Configurable parameters
-	local CFG_CVMFS_SERVER_URL="http://cvmfs-stratum-one.cern.ch/cvmfs/@fqrn@;http://cernvmfs.gridpp.rl.ac.uk/cvmfs/@fqrn@;http://cvmfs.racf.bnl.gov/cvmfs/@fqrn@;http://cvmfs.fnal.gov/cvmfs/@fqrn@;http://cvmfs02.grid.sinica.edu.tw/cvmfs/@fqrn@"
+	local CFG_CVMFS_SERVER_URL="http://hepvm.cern.ch/cvmfs/@fqrn@;http://cvmfs-stratum-one.cern.ch/cvmfs/@fqrn@;http://cernvmfs.gridpp.rl.ac.uk/cvmfs/@fqrn@;http://cvmfs.racf.bnl.gov/cvmfs/@fqrn@;http://cvmfs.fnal.gov/cvmfs/@fqrn@;http://cvmfs02.grid.sinica.edu.tw/cvmfs/@fqrn@"
 	local CFG_CVMFS_PROXY="auto;DIRECT"
 
 	# [CVMFS_PUB_KEY] : CERN Public Key
@@ -205,7 +205,7 @@ function MACRO_RW {
 	PARROT_ARGS="${PARROT_ARGS} -M '/$1=${GUESTRW_DIR}/$1'"
 	mkdir -p ${GUESTRW_DIR}/$1
 }
-# Create directoriy in $*
+# Create directoriy in $1
 function MACRO_MKDIR {
 	mkdir -p ${GUESTRW_DIR}/$1
 }
