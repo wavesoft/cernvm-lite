@@ -312,7 +312,7 @@ else
 	CACHE_BASE_DIR="${CACHE_DIR}/cache"
 
 	# If cache is not initialized, force F_NEW
-	if [ ! -f "${CACHE_BASE_DIR}/initialized" ]; then
+	if [ ! -f "${CACHE_BASE_DIR}/config" ]; then
 		F_NEW=1
 	else
 		# Otherwise, if F_NEW was specified, remove previous cache dir
@@ -330,7 +330,7 @@ CVMFS_CACHE_DIR="${CVMFS_DIR}/cache" && mkdir -p ${CVMFS_CACHE_DIR}
 PARROT_DIR="${CACHE_BASE_DIR}/parrot" && mkdir -p ${PARROT_DIR}
 
 # Setup basic parrot args
-PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
+PARROT_ARGS=""
 
 # Setup CVMFS 
 setup_cvmfs_cern ${CVMFS_DIR} "cernvm-devel.cern.ch" || { echo "ERROR: Could not configure cernvm-devel.cern.ch CVMFS repository!"; cleanup; exit 1; }
@@ -354,6 +354,7 @@ if [ $F_NEW -eq 1 ]; then
 	prepare_root ${GUESTRW_DIR}
 
 	# Make sure we have a temporary directory inside the guest R/W dir
+	PARROT_ARGS="${PARROT_ARGS} -M '/tmp=${GUESTRW_DIR}/tmp'"
 	mkdir -p ${GUESTRW_DIR}/tmp
 
 	# Create a home directory for the user
@@ -380,13 +381,18 @@ alias ls='ls --color=auto'
 EOF
 	chmod +x ${BOOTSTRAP_BIN}
 
-	# Mark as initialized
-	touch "${CACHE_BASE_DIR}/initialized"
+	# Cache PARROT_ARGS
+	echo "export PARROT_ARGS='${PARROT_ARGS}'" > "${CACHE_BASE_DIR}/config"
+
+else
+
+	# Import cache dir config
+	. "${CACHE_BASE_DIR}/config"
 
 fi
 
-# Finalize parrot configuration
-PARROT_ARGS="${PARROT_ARGS} -M '/tmp=${GUESTRW_DIR}/tmp'"
+# Finalize parrot arguments
+PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}' -w /home/${USERNAME}"
 
 # Setup parrot environment
 echo "CernVM-Lite: Starting CernVM in userland"
@@ -395,7 +401,7 @@ export PARROT_CVMFS_CONFIG="cache_directory=${CVMFS_CACHE_DIR}"
 export PARROT_ALLOW_SWITCHING_CVMFS_REPOSITORIES=TRUE
 
 # Start parrot & bootstrap
-eval "${PARROT_BIN} ${PARROT_ARGS} -w /home/${USERNAME} $* /home/${USERNAME}/.bootstrap"
+eval "${PARROT_BIN} ${PARROT_ARGS} $* /home/${USERNAME}/.bootstrap"
 
 # Remove directory upon exit
 if [ $F_VOLATILE -eq 1 ]; then
