@@ -24,7 +24,15 @@ CVMU_SERVER_URL="http://test4theory.cern.ch/cvmu"
 # Usage helper
 function usage {
 	echo "CernVM in userland v0.1.0 - Ioannis Charalampidis PH/SFT"
-	echo "Usage: cvmu [-v|--volatile] [-n|--new] [-b <boot script>] [-c <cvmfs-repositroy>] <command> ..."
+	echo ""
+	echo "Usage: cvmu [-v|--volatile] [-n|--new] [-b <boot script>]"
+	echo "            [-c <cvmfs-repositroy>] -- <parrot_run argument> ..."
+	echo ""
+	echo " -v,--volatile Create a temporary (volatile) environment."
+	echo " -n,--new      Cleanup the previous permanent environment."
+	echo " -b,boot       Specify a custom boot script."
+	echo " -c <cvmfs>    Mount the specified CVMFS repository."
+	echo ""
 }
 
 # Validate the boot script
