@@ -289,6 +289,8 @@ USERNAME=$(whoami)
 # Download boot script if not specified
 if [ -z "$BOOT_CONFIG" ]; then
 	setup_boot "latest" || exit 1
+else
+	setup_boot "${BOOT_CONFIG}" || exit 1
 fi
 
 # Validate boot script
