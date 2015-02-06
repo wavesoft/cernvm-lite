@@ -276,6 +276,7 @@ CACHE_DIR="${HOME}/.cvmu"
 
 # Detect environment
 detect_env || exit 1
+USERNAME=$(whoami)
 
 # Download boot script if not specified
 if [ -z "$BOOT_CONFIG" ]; then
@@ -352,12 +353,10 @@ if [ $F_NEW -eq 1 ]; then
 	echo "CernVM-Lite: Preparing root filesystem"
 	prepare_root ${GUESTRW_DIR}
 
-	# Overwrite the /tmp folder AFTER everything else
-	PARROT_ARGS="${PARROT_ARGS} -M '/tmp=${GUESTRW_DIR}/tmp'"
+	# Make sure we have a temporary directory inside the guest R/W dir
 	mkdir -p ${GUESTRW_DIR}/tmp
 
 	# Create a home directory for the user
-	USERNAME=$(whoami)
 	mkdir -p ${GUESTRW_DIR}/home/${USERNAME}
 
 	# Create bootstrap script
@@ -385,6 +384,9 @@ EOF
 	touch "${CACHE_BASE_DIR}/initialized"
 
 fi
+
+# Finalize parrot configuration
+PARROT_ARGS="${PARROT_ARGS} -M '/tmp=${GUESTRW_DIR}/tmp'"
 
 # Setup parrot environment
 echo "CernVM-Lite: Starting CernVM in userland"
