@@ -382,7 +382,7 @@ EOF
 	chmod +x ${BOOTSTRAP_BIN}
 
 	# Cache PARROT_ARGS
-	echo "export PARROT_ARGS='${PARROT_ARGS}'" > "${CACHE_BASE_DIR}/config"
+	echo "export PARROT_ARGS=\"${PARROT_ARGS}\"" > "${CACHE_BASE_DIR}/config"
 
 else
 
