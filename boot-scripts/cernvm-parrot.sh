@@ -134,6 +134,12 @@ function setup_boot {
 	local CACHE_BOOT_DIR="${CACHE_DIR}/boot"
 	[ ! -d ${CACHE_BOOT_DIR} ] && mkdir -p $CACHE_BOOT_DIR
 
+	# If BOOT_NAME is already a file, we are done
+	if [ -f ${BOOT_NAME} ]; then
+		BOOT_CONFIG=${BOOT_NAME}
+		return 0
+	fi
+
 	# Check if this boot script is already cached
 	BOOT_FILES=${CACHE_BOOT_DIR}/files-${BOOT_NAME}.tbz2
 	BOOT_CONFIG=${CACHE_BOOT_DIR}/${BOOT_NAME}.boot
