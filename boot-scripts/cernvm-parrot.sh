@@ -24,7 +24,7 @@ CVMU_SERVER_URL="http://test4theory.cern.ch/cvmu"
 # Usage helper
 function usage {
 	echo "CernVM in userland v0.1.0 - Ioannis Charalampidis PH/SFT"
-	echo "Usage: cvmu [-n <name>] [-b <boot script>] [-c <cvmfs-repositroy>] <command> ..."
+	echo "Usage: cvmu [-v|--volatile] [-n|--new] [-b <boot script>] [-c <cvmfs-repositroy>] <command> ..."
 }
 
 # Validate the boot script
@@ -74,11 +74,11 @@ function setup_parrot {
 	fi
 
 	# Make sure we have a cache directory
-	local CACHE_DIR="${HOME}/.cvmu/bin"
-	[ ! -d ${CACHE_DIR} ] && mkdir -p $CACHE_DIR
+	local CACHE_BIN_DIR="${CACHE_DIR}/bin"
+	[ ! -d ${CACHE_BIN_DIR} ] && mkdir -p $CACHE_BIN_DIR
 
 	# Check if parrot is cached
-	X_PARROT_BIN=${CACHE_DIR}/parrot_run
+	X_PARROT_BIN=${CACHE_BIN_DIR}/parrot_run
 	if [ -f ${X_PARROT_BIN} ]; then
 		PARROT_BIN=${X_PARROT_BIN}
 		return 0
@@ -123,15 +123,16 @@ function setup_boot {
 	local BOOT_NAME=$1
 
 	# Make sure we have a cache directory
-	local CACHE_DIR="${HOME}/.cvmu/boot"
-	[ ! -d ${CACHE_DIR} ] && mkdir -p $CACHE_DIR
+	local CACHE_BOOT_DIR="${CACHE_DIR}/boot"
+	[ ! -d ${CACHE_BOOT_DIR} ] && mkdir -p $CACHE_BOOT_DIR
 
 	# Check if this boot script is already cached
-	BOOT_FILES=${CACHE_DIR}/files-${BOOT_NAME}.tbz2
-	BOOT_CONFIG=${CACHE_DIR}/${BOOT_NAME}.boot
+	BOOT_FILES=${CACHE_BOOT_DIR}/files-${BOOT_NAME}.tbz2
+	BOOT_CONFIG=${CACHE_BOOT_DIR}/${BOOT_NAME}.boot
 	[ -f ${BOOT_CONFIG} ] && return 0
 
 	# Otherwise download
+	echo "CernVM-Lite: Downloading ${BOOT_NAME} CVMU boot specifications"
 	curl -s -o "${BOOT_CONFIG}" "${CVMU_SERVER_URL}/boot/${BOOT_NAME}.boot"
 	[ $? -ne 0 ] && echo "ERROR: Could not download boot configuration!" && rm ${BOOT_CONFIG} return 1
 	curl -s -o "${BOOT_FILES}" "${CVMU_SERVER_URL}/boot/files-${BOOT_NAME}.tbz2"
@@ -187,14 +188,14 @@ function setup_cvmfs_cern {
 
 }
 
-#
-# Cleanup temporary directory
-#
 function cleanup {
-	# Cleanup temp dir if specified
-	[ ! -z "$TEMP_DIR" ] && rm -rf "$TEMP_DIR"
-	# Return always 0
+
+	# Cleanup cache
+	[ ! -z "${CACHE_BASE_DIR}" -a -d "${CACHE_BASE_DIR}" ] && rm -rf ${CACHE_BASE_DIR}
+
+	# Always return 0
 	return 0
+
 }
 
 # ----------------------------------------------
@@ -240,7 +241,7 @@ function MACRO_EXPAND {
 ################################################
 
 # Get options from command-line
-options=$(getopt -o hc:b:n: -l help,cvmfs:,boot:,name: -- "$@")
+options=$(getopt -o hc:b:nv -l help,cvmfs:,boot:,new,volatile -- "$@")
 if [ $? -ne 0 ]; then
 	usage
 	exit 1
@@ -250,7 +251,8 @@ eval set -- "$options"
 # Default options
 BOOT_CONFIG=""
 CVMFS_REPO_LIST=""
-CONTAINER_NAME=""
+F_NEW=0
+F_VOLATILE=0
 
 # Process options
 while true
@@ -258,19 +260,25 @@ do
 	case "$1" in
 		-h|--help)          usage && exit 0;;
 		-b|--boot)          BOOT_CONFIG="$2"; shift 2;;
-		-n|--name)			CONTAINER_NAME="$2"; shift 2;;
+		-n|--new)			F_NEW=1; shift 1;;
+		-v|--volatile)		F_VOLATILE=1; shift 1;;
 		-c|--cvmfs)         CVMFS_REPO_LIST="${CVMFS_REPO_LIST} $2"; shift 2;;
 		--)                 shift 1; break ;;
 		*)                  break ;;
 	esac
 done
 
+################################################
+
+# Setup cache directory
+CACHE_DIR="${HOME}/.cvmu"
+[ ! -d ${CACHE_DIR} ] && mkdir -p $CACHE_DIR
+
 # Detect environment
 detect_env || exit 1
 
 # Download boot script if not specified
 if [ -z "$BOOT_CONFIG" ]; then
-	echo "CernVM-Lite: Downloading latest CVMU boot specifications"
 	setup_boot "latest" || exit 1
 fi
 
@@ -283,19 +291,42 @@ setup_parrot || { echo "ERROR: Could not find/download parrot_run utility!"; exi
 # Base directory (inside parrot environment)
 BASE_DIR="/cvmfs/cernvm-devel.cern.ch/cvm3"
 
-# Create temporary directory or resume/create new one
-if [ ! -z "$CONTAINER_NAME" ]; then
-	# Create a resumable (permanent) cache in the user's home folder
-	TEMP_DIR="${HOME}/.cvmu/cache/${CONTAINER_NAME}"
-	[ ! -d ${TEMP_DIR} ] && mkdir -p $TEMP_DIR
+# If we are about to create a volatile environment,
+# create a temp directory
+CACHE_BASE_DIR=""
+if [ $F_VOLATILE -eq 1 ]; then
+
+	# New temp dir
+	VOLATILE_DIR=$(mktemp -d)
+
+	# Cache base dir is inside the volatile dir
+	CACHE_BASE_DIR="${VOLATILE_DIR}"
+
+	# Initialize
+	F_NEW=1
+
 else
-	TEMP_DIR=$(mktemp -d)
+
+	# Cache base dir is inside the permanent dir
+	CACHE_BASE_DIR="${CACHE_DIR}/cache"
+
+	# If cache is not initialized, force F_NEW
+	if [ ! -f "${CACHE_BASE_DIR}/initialized" ]; then
+		F_NEW=1
+	else
+		# Otherwise, if F_NEW was specified, remove previous cache dir
+		# (and re-create)
+		[ $F_NEW -eq 1 ] && rm -rf ${CACHE_BASE_DIR}
+	fi
+
+
 fi
 
 # Create temporary working directory and internal structure
-GUESTRW_DIR="${TEMP_DIR}/root" && mkdir -p ${GUESTRW_DIR}
-CVMFS_DIR="${TEMP_DIR}/cvmfs" && mkdir -p ${CVMFS_DIR} && mkdir -p ${CVMFS_DIR}/cache
-PARROT_DIR="${TEMP_DIR}/parrot" && mkdir -p ${PARROT_DIR}
+GUESTRW_DIR="${CACHE_BASE_DIR}/root" && mkdir -p ${GUESTRW_DIR}
+CVMFS_DIR="${CACHE_BASE_DIR}/cvmfs" && mkdir -p ${CVMFS_DIR}
+CVMFS_CACHE_DIR="${CVMFS_DIR}/cache" && mkdir -p ${CVMFS_CACHE_DIR}
+PARROT_DIR="${CACHE_BASE_DIR}/parrot" && mkdir -p ${PARROT_DIR}
 
 # Setup basic parrot args
 PARROT_ARGS="${PARROT_ARGS} -f -t '${PARROT_DIR}'"
@@ -311,24 +342,27 @@ for REPO in ${CVMFS_REPO_LIST}; do
 	PARROT_CVMFS_REPO="${PARROT_CVMFS_REPO} ${CVMFS_REPOS}:url=${CVMFS_URL},proxies=${CVMFS_PROXY},pubkey=${CVMFS_PUB_KEY},mountpoint=/cvmfs/${CVMFS_REPOS}"
 done
 
-# Source boot script
-. ${BOOT_CONFIG}
+# Check if have to initialize cache
+if [ $F_NEW -eq 1 ]; then
 
-# Prepare filesystem
-echo "CernVM-Lite: Preparing root filesystem"
-prepare_root ${GUESTRW_DIR}
+	# Source boot script
+	. ${BOOT_CONFIG}
 
-# Overwrite the /tmp folder AFTER everything else
-PARROT_ARGS="${PARROT_ARGS} -M '/tmp=${GUESTRW_DIR}/tmp'"
-mkdir -p ${GUESTRW_DIR}/tmp
+	# Prepare filesystem
+	echo "CernVM-Lite: Preparing root filesystem"
+	prepare_root ${GUESTRW_DIR}
 
-# Create a home directory for the user
-USERNAME=$(whoami)
-mkdir -p ${GUESTRW_DIR}/home/${USERNAME}
+	# Overwrite the /tmp folder AFTER everything else
+	PARROT_ARGS="${PARROT_ARGS} -M '/tmp=${GUESTRW_DIR}/tmp'"
+	mkdir -p ${GUESTRW_DIR}/tmp
 
-# Create bootstrap script
-BOOTSTRAP_BIN=${GUESTRW_DIR}/home/${USERNAME}/.bootstrap
-cat <<EOF > ${BOOTSTRAP_BIN}
+	# Create a home directory for the user
+	USERNAME=$(whoami)
+	mkdir -p ${GUESTRW_DIR}/home/${USERNAME}
+
+	# Create bootstrap script
+	BOOTSTRAP_BIN=${GUESTRW_DIR}/home/${USERNAME}/.bootstrap
+	cat <<EOF > ${BOOTSTRAP_BIN}
 #!/bin/bash
 
 # Display banner
@@ -345,19 +379,26 @@ alias ls='ls --color=auto'
 
 /bin/bash
 EOF
-chmod +x ${BOOTSTRAP_BIN}
+	chmod +x ${BOOTSTRAP_BIN}
 
-# PRoot
+	# Mark as initialized
+	touch "${CACHE_BASE_DIR}/initialized"
+
+fi
+
+# Setup parrot environment
 echo "CernVM-Lite: Starting CernVM in userland"
 export PARROT_CVMFS_REPO=${PARROT_CVMFS_REPO}
-export PARROT_CVMFS_CONFIG="cache_directory=${CVMFS_DIR}/cache"
+export PARROT_CVMFS_CONFIG="cache_directory=${CVMFS_CACHE_DIR}"
 export PARROT_ALLOW_SWITCHING_CVMFS_REPOSITORIES=TRUE
+
+# Start parrot & bootstrap
 eval "${PARROT_BIN} ${PARROT_ARGS} -w /home/${USERNAME} $* /home/${USERNAME}/.bootstrap"
 
 # Remove directory upon exit
-if [ ! -z "$CONTAINER_NAME" ]; then
-	echo "CernVM-Lite: Container state '${CONTAINER_NAME}' saved"
+if [ $F_VOLATILE -eq 1 ]; then
+	echo "CernVM-Lite: Cleaning-up volatile environment"
+	rm -rf ${VOLATILE_DIR}
 else
-	echo "CernVM-Lite: Cleaning-up environment"
-	rm -rf ${TEMP_DIR}
+	echo "CernVM-Lite: Saving container state"
 fi
