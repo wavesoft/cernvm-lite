@@ -190,8 +190,8 @@ function setup_cvmfs_cern {
 
 function cleanup {
 
-	# Cleanup cache
-	[ ! -z "${CACHE_BASE_DIR}" -a -d "${CACHE_BASE_DIR}" ] && rm -rf ${CACHE_BASE_DIR}
+	# Cleanup cache only if that's the first time we create it
+	[ $F_NEW -eq 1 -a ! -z "${CACHE_BASE_DIR}" -a -d "${CACHE_BASE_DIR}" ] && rm -rf ${CACHE_BASE_DIR}
 
 	# Always return 0
 	return 0
