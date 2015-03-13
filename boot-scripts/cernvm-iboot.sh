@@ -72,6 +72,7 @@ function is_script_invalid {
 
 # Read-only mount from $1
 function MACRO_RO {
+	mkdir -p "${CVMFS_RO_BASE}/$1"
 	mount --bind "${CVMFS_RO_BASE}/$1" "${GUEST_ROOT}/$1"
 }
 # Create writable directory in $1
@@ -81,6 +82,7 @@ function MACRO_RW {
 	if [ $? -ne 0 ]; then
 		TMP_DIR="${GUEST_CACHE_RW}/$i"
 		mkdir -p ${TMP_DIR}
+		[ ! -d "${GUEST_ROOT}/$1" ] && mkdir -p "${GUEST_ROOT}/$1"
 		mount --bind "${TMP_DIR}" "${GUEST_ROOT}/$1"
 	fi
 }
