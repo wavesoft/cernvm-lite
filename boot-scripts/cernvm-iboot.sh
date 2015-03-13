@@ -36,7 +36,7 @@ function MACRO_RO {
 }
 # Create writable directory in $1
 function MACRO_RW {
-	TMP_DIR="${GUEST_CACHE}/$i"
+	TMP_DIR="${GUEST_CACHE_RW}/$i"
 	mkdir -p ${TMP_DIR}
 	ln -s "${TMP_DIR}" "${GUEST_ROOT}/$1"
 }
@@ -69,10 +69,15 @@ function MACRO_EXPAND {
 ################################################
 
 # 
-CVMFS_RO_DIR="/iboot/cvmfs/cernvm-devel.cern.ch"
+IBOOT_DIR="/iboot"
+CVMFS_RO_DIR="/${IBOOT_DIR}/cvmfs/cernvm-devel.cern.ch"
 GUEST_CVMFS_BASE="${CVMFS_RO_DIR}/cvm3"
-GUEST_CACHE="/iboot/cache"
-GUEST_ROOT="/iboot/boot"
+GUEST_CACHE_RW="/${IBOOT_DIR}/rw"
+GUEST_CACHE_FILES="/${IBOOT_DIR}/cache"
+GUEST_ROOT="/${IBOOT_DIR}/boot"
+
+# Make sure guest root exists
+mkdir -p ${GUEST_ROOT}
 
 # Require a path to the boot script
 [ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && usage && exit 1
