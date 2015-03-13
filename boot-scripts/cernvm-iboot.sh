@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/cvmfs/cernvm-prod.cern.ch/cvm3/bin/bash
 #
 # CernVM Lite Boot Script 
 # Copyright (C) 2014-2015  Ioannis Charalampidis, PH-SFT, CERN
@@ -72,11 +72,17 @@ function is_script_invalid {
 
 # Read-only mount from $1
 function MACRO_RO {
-	ln -s "${CVMFS_RO_BASE}/$1" "${GUEST_ROOT}/$1"
+	mount --bind "${CVMFS_RO_BASE}/$1" "${GUEST_ROOT}/$1"
 }
 # Create writable directory in $1
 function MACRO_RW {
-	mkdir -p ${GUEST_ROOT}/$1
+	mkdir -p ${GUEST_ROOT}/$1 >/dev/null 2>/dev/null
+	# Try bind-mount if mkdir mount failed (read-only filesystem)
+	if [ $? -ne 0 ]; then
+		TMP_DIR="${GUEST_CACHE_RW}/$i"
+		mkdir -p ${TMP_DIR}
+		mount --bind "${TMP_DIR}" "${GUEST_ROOT}/$1"
+	fi
 }
 # Create directoriy in $1
 function MACRO_MKDIR {
