@@ -1,4 +1,4 @@
-#!/cvmfs/cernvm-prod.cern.ch/cvm3/bin/bash
+#!/cvmfs/cernvm-prod.cern.ch/cvm3/bin/env LD_LIBRARY_PATH=/cvmfs/cernvm-prod.cern.ch/cvm3/lib64 /cvmfs/cernvm-prod.cern.ch/cvm3/bin/bash
 #
 # CernVM Lite Boot Script 
 # Copyright (C) 2014-2015  Ioannis Charalampidis, PH-SFT, CERN
