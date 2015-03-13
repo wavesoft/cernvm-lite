@@ -135,3 +135,6 @@ is_script_invalid ${BOOT_CONFIG} && echo "ERROR: This is not a valid boot script
 # Source boot script
 . ${BOOT_CONFIG}
 
+# Prepare filesystem
+echo "CernVM-Lite: Preparing root filesystem"
+prepare_root ${GUEST_DIR}
