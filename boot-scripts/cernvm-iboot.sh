@@ -18,12 +18,23 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
-# Script configuration
-CVMU_SERVER_URL="http://test4theory.cern.ch/cvmu"
+# Script configuration (Assume worst-case scenario where there is no DNS inside)
+CVMU_SERVER_URL="http://128.142.202.103/cvmu"
 
 # Usage helper
 function usage {
 	echo "Usage: cernvm-iboot.sh [<boot tag>]"
+}
+
+# Usage helper
+function usage {
+	echo "CernVM In-Container Boot Script v0.1.0 - Ioannis Charalampidis PH/SFT"
+	echo ""
+	echo "Usage: cvm-iboot [-b <boot script>] [--init]"
+	echo ""
+	echo " -b,boot       Specify a custom boot script."
+	echo " --init        Tell iboot to init system when done."
+	echo ""
 }
 
 #
@@ -82,7 +93,7 @@ function MACRO_RW {
 # Create directoriy in $1
 function MACRO_MKDIR {
 	mkdir -p ${GUEST_ROOT}/$1 2>/dev/null 1>/dev/null
-	[ $? -ne 0 ] && echo "ERROR: Cannot create ${GUEST_ROOT}/$i"
+	[ $? -ne 0 ] && echo "ERROR: Cannot create ${GUEST_ROOT}/$1"
 }
 # Import files from the current OS
 function MACRO_IMPORT {
@@ -108,26 +119,54 @@ function MACRO_EXPAND {
 
 ################################################
 
+# Get options from command-line
+options=$(getopt -o b: -l boot:,init -- "$@")
+if [ $? -ne 0 ]; then
+	usage
+	exit 1
+fi
+eval set -- "$options"
+
+# Default options
+F_INIT=0
+BOOT_CONFIG="latest"
+
+# Process options
+while true
+do
+	case "$1" in
+		-b|--boot)          BOOT_CONFIG="$2"; shift 2;;
+		--init)         	F_INIT=1; shift 1;;
+		--)                 shift 1; break ;;
+		*)                  break ;;
+	esac
+done
+
+################################################
+
 # The pre-mounted CVMFS directory to use for read-only mounts
 CVMFS_RO_DIR="/cvmfs/cernvm-prod.cern.ch"
 CVMFS_RO_BASE="${CVMFS_RO_DIR}/cvm3"
+
+# Include binaries from CVMFS because most of the utilities
+# we have in our file might not exist (yet) in the filesystem
+export PATH="${PATH}:${CVMFS_RO_DIR}/bin:${CVMFS_RO_DIR}/sbin:${CVMFS_RO_DIR}/usr/bin:${CVMFS_RO_DIR}/usr/sbin"
 
 # Prepare iboot specifics
 IBOOT_DIR="/iboot"
 GUEST_CACHE_RW="${IBOOT_DIR}/rw"
 GUEST_CACHE_FILES="${IBOOT_DIR}/cache"
-GUEST_ROOT="${IBOOT_DIR}/boot"
+
+# Expand guest filesystem to '/'
+GUEST_ROOT=""
 
 # Make sure guest root exists
 mkdir -p ${GUEST_ROOT}
 
-# Require a path to the boot script
-BOOT_TAG="latest"
-[ ! -z "$1" ] && BOOT_TAG="${BOOT_TAG}"
-shift
-
-# Boot that particular tag
-setup_boot ${BOOT_TAG}
+# Download boot config if it's not a file
+if [ ! -f ${BOOT_CONFIG} ]; then
+	setup_boot ${BOOT_CONFIG}
+fi
 
 # Validate boot script
 is_script_invalid ${BOOT_CONFIG} && echo "ERROR: This is not a valid boot script!" && exit 2
@@ -138,3 +177,11 @@ is_script_invalid ${BOOT_CONFIG} && echo "ERROR: This is not a valid boot script
 # Prepare filesystem
 echo "CernVM-Lite: Preparing root filesystem"
 prepare_root ${GUEST_DIR}
+
+# If we were asked to perform system init, do it now
+if [ $F_INIT -eq 1 ]; then
+
+	# Just run a shell for now
+	/bin/bash
+
+fi
