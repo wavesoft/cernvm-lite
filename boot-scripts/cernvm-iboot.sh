@@ -23,6 +23,44 @@ function usage {
 	echo "Usage: cernvm-iboot.sh <boot script>"
 }
 
+
+#
+# Setup boot configuration files
+#
+# Requires: CVMU_SERVER_URL
+# Exports: BOOT_FILES, BOOT_CONFIG
+#
+function setup_boot {
+	local BOOT_NAME=$1
+
+	# Make sure we have a cache directory
+	local CACHE_BOOT_DIR="${GUEST_CACHE_FILES}/boot"
+	[ ! -d ${CACHE_BOOT_DIR} ] && mkdir -p $CACHE_BOOT_DIR
+
+	# If BOOT_NAME is already a file, we are done
+	if [ -f ${BOOT_NAME} ]; then
+		BOOT_CONFIG=${BOOT_NAME}
+		return 0
+	fi
+
+	# Check if this boot script is already cached
+	BOOT_FILES=${CACHE_BOOT_DIR}/files-${BOOT_NAME}.tbz2
+	BOOT_CONFIG=${CACHE_BOOT_DIR}/${BOOT_NAME}.boot
+	[ -f ${BOOT_CONFIG} ] && return 0
+
+	# Otherwise download
+	echo "CernVM-Lite: Downloading ${BOOT_NAME} CVMU boot specifications"
+	curl -s -o "${BOOT_CONFIG}" "${CVMU_SERVER_URL}/boot/${BOOT_NAME}.boot"
+	[ $? -ne 0 ] && echo "ERROR: Could not download boot configuration!" && rm ${BOOT_CONFIG} return 1
+	curl -s -o "${BOOT_FILES}" "${CVMU_SERVER_URL}/boot/files-${BOOT_NAME}.tbz2"
+	[ $? -ne 0 ] && echo "ERROR: Could not download boot files!" && rm ${BOOT_CONFIG} && rm ${BOOT_FILES} && return 1
+
+	# We are good
+	return 0
+}
+
+################################################
+
 # Validate the boot script
 function is_script_invalid {
 	[ "$(cat $1 | head -n1 | tr -d '\n')" != "#!/bin/false" ] && return 1
@@ -83,6 +121,9 @@ mkdir -p ${GUEST_ROOT}
 [ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && usage && exit 1
 BOOT_SCRIPT=$1
 shift
+
+# 
+setup_boot "latest"
 
 # Validate boot script
 is_script_invalid ${BOOT_SCRIPT} && echo "ERROR: This is not a valid boot script!" && exit 2
