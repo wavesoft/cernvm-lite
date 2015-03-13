@@ -77,7 +77,8 @@ function MACRO_RO {
 # Create writable directory in $1
 function MACRO_RW {
 	TMP_DIR="${GUEST_CACHE_RW}/$1"
-	mkdir -p ${TMP_DIR}
+	mkdir -p "${TMP_DIR}"
+	[ !-d "${GUEST_ROOT}/$1" ] && mkdir -p "${GUEST_ROOT}/$1"
 	mount --bind "${TMP_DIR}" "${GUEST_ROOT}/$1"
 	#ln -s "${TMP_DIR}" "${GUEST_ROOT}/$1"
 }
