@@ -23,11 +23,6 @@ CVMU_SERVER_URL="http://128.142.202.103/cvmu"
 
 # Usage helper
 function usage {
-	echo "Usage: cernvm-iboot.sh [<boot tag>]"
-}
-
-# Usage helper
-function usage {
 	echo "CernVM In-Container Boot Script v0.1.0 - Ioannis Charalampidis PH/SFT"
 	echo ""
 	echo "Usage: cvm-iboot [-b <boot script>] [--init]"
@@ -154,8 +149,10 @@ export PATH="${PATH}:${CVMFS_RO_DIR}/bin:${CVMFS_RO_DIR}/sbin:${CVMFS_RO_DIR}/us
 
 # Prepare iboot specifics
 IBOOT_DIR="/iboot"
-GUEST_CACHE_RW="${IBOOT_DIR}/rw"
 GUEST_CACHE_FILES="${IBOOT_DIR}/cache"
+
+# Make iboot directories
+mkdir -p ${GUEST_CACHE_FILES}
 
 # Expand guest filesystem to '/'
 GUEST_ROOT=""
