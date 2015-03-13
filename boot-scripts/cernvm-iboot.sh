@@ -18,11 +18,13 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #
 
+# Script configuration
+CVMU_SERVER_URL="http://test4theory.cern.ch/cvmu"
+
 # Usage helper
 function usage {
-	echo "Usage: cernvm-iboot.sh <boot script>"
+	echo "Usage: cernvm-iboot.sh [<boot tag>]"
 }
-
 
 #
 # Setup boot configuration files
@@ -70,7 +72,7 @@ function is_script_invalid {
 
 # Read-only mount from $1
 function MACRO_RO {
-	ln -s "${GUEST_CVMFS_BASE}/$1" "${GUEST_ROOT}/$1"
+	ln -s "${CVMFS_RO_BASE}/$1" "${GUEST_ROOT}/$1"
 }
 # Create writable directory in $1
 function MACRO_RW {
@@ -106,10 +108,12 @@ function MACRO_EXPAND {
 
 ################################################
 
-# 
+# The pre-mounted CVMFS directory to use for read-only mounts
+CVMFS_RO_DIR="/cvmfs/cernvm-prod.cern.ch"
+CVMFS_RO_BASE="${CVMFS_RO_DIR}/cvm3"
+
+# Prepare iboot specifics
 IBOOT_DIR="/iboot"
-CVMFS_RO_DIR="/${IBOOT_DIR}/cvmfs/cernvm-devel.cern.ch"
-GUEST_CVMFS_BASE="${CVMFS_RO_DIR}/cvm3"
 GUEST_CACHE_RW="/${IBOOT_DIR}/rw"
 GUEST_CACHE_FILES="/${IBOOT_DIR}/cache"
 GUEST_ROOT="/${IBOOT_DIR}/boot"
@@ -118,16 +122,16 @@ GUEST_ROOT="/${IBOOT_DIR}/boot"
 mkdir -p ${GUEST_ROOT}
 
 # Require a path to the boot script
-[ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && usage && exit 1
-BOOT_SCRIPT=$1
+BOOT_TAG="latest"
+[ ! -z "$1" ] && BOOT_TAG="${BOOT_TAG}"
 shift
 
-# 
-setup_boot "latest"
+# Boot that particular tag
+setup_boot ${BOOT_TAG}
 
 # Validate boot script
-is_script_invalid ${BOOT_SCRIPT} && echo "ERROR: This is not a valid boot script!" && exit 2
+is_script_invalid ${BOOT_CONFIG} && echo "ERROR: This is not a valid boot script!" && exit 2
 
 # Source boot script
-. ${BOOT_SCRIPT}
+. ${BOOT_CONFIG}
 
