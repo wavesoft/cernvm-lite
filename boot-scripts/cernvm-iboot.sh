@@ -72,7 +72,7 @@ function is_script_invalid {
 
 # Read-only mount from $1
 function MACRO_RO {
-	mkdir -p "${CVMFS_RO_BASE}/$1"
+	mkdir -p "${GUEST_ROOT}/$1"
 	mount --bind "${CVMFS_RO_BASE}/$1" "${GUEST_ROOT}/$1"
 }
 # Create writable directory in $1
