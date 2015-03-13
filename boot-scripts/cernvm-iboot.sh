@@ -114,9 +114,9 @@ CVMFS_RO_BASE="${CVMFS_RO_DIR}/cvm3"
 
 # Prepare iboot specifics
 IBOOT_DIR="/iboot"
-GUEST_CACHE_RW="/${IBOOT_DIR}/rw"
-GUEST_CACHE_FILES="/${IBOOT_DIR}/cache"
-GUEST_ROOT="/${IBOOT_DIR}/boot"
+GUEST_CACHE_RW="${IBOOT_DIR}/rw"
+GUEST_CACHE_FILES="${IBOOT_DIR}/cache"
+GUEST_ROOT="${IBOOT_DIR}/boot"
 
 # Make sure guest root exists
 mkdir -p ${GUEST_ROOT}
