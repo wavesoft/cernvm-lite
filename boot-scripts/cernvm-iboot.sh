@@ -78,7 +78,8 @@ function MACRO_RO {
 function MACRO_RW {
 	TMP_DIR="${GUEST_CACHE_RW}/$1"
 	mkdir -p ${TMP_DIR}
-	ln -s "${TMP_DIR}" "${GUEST_ROOT}/$1"
+	mount --bind "${TMP_DIR}" "${GUEST_ROOT}/$1"
+	#ln -s "${TMP_DIR}" "${GUEST_ROOT}/$1"
 }
 # Create directoriy in $1
 function MACRO_MKDIR {
