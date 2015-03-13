@@ -72,7 +72,7 @@ function MACRO_EXPAND {
 CVMFS_RO_DIR="/iboot/cvmfs/cernvm-devel.cern.ch"
 GUEST_CVMFS_BASE="${CVMFS_RO_DIR}/cvm3"
 GUEST_CACHE="/iboot/cache"
-GUEST_ROOT=""
+GUEST_ROOT="/iboot/boot"
 
 # Require a path to the boot script
 [ -z "$1" ] && echo "ERROR: Please specify the boot script to use!" && usage && exit 1
